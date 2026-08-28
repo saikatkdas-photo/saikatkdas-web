@@ -1,0 +1,25 @@
+{
+  "owner": {
+    "name": "Saikat K Das",
+    "monogram": "SKD",
+    "tagline": "Street photography from Kolkata, Bangalore, and beyond.",
+    "email": "skdjuit@gmail.com",
+    "instagram": "https://www.instagram.com/saikatkdas",
+    "instagramHandle": "@saikatkdas"
+  },
+  "site": {
+    "title": "Saikat K Das — Photography",
+    "description": "Street photography portfolio of Saikat K Das. Focused on the everyday, unscripted moments of Kolkata, Bangalore, and the road in between.",
+    "url": "https://saikatkdas.com",
+    "language": "en"
+  },
+  "nav": [
+    { "label": "Home", "href": "/", "key": "home" },
+    { "label": "Projects", "href": "/projects/", "key": "projects" },
+    { "label": "Series", "href": "/series/", "key": "series" },
+    { "label": "Themes", "href": "/themes/", "key": "themes" },
+    { "label": "About", "href": "/about/", "key": "about" },
+    { "label": "Gear", "href": "/gear/", "key": "gear" },
+    { "label": "Journal", "href": "/journal/", "key": "journal" }
+  ]
+}

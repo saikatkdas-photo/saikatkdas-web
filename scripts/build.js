@@ -1,0 +1,293 @@
+#!/usr/bin/env node
+import fs from 'node:fs/promises';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { loadSite } from './lib/content.js';
+import { generateResponsiveImages } from './lib/image.js';
+import { renderLayout } from './templates/partials.js';
+import { renderHome } from './templates/home.js';
+import { renderCollectionsIndex } from './templates/collectionsIndex.js';
+import { renderCollectionDetail } from './templates/collectionDetail.js';
+import { renderThemesIndex, renderThemeDetail } from './templates/themes.js';
+import { renderAbout } from './templates/about.js';
+import { renderGear } from './templates/gear.js';
+import { renderJournalIndex, renderJournalDetail } from './templates/journal.js';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const ROOT = path.resolve(__dirname, '..');
+const DIST = path.join(ROOT, 'dist');
+const DOMAIN = 'saikatkdas.com';
+
+async function writeFile(relPath, contents) {
+  const fullPath = path.join(DIST, relPath);
+  await fs.mkdir(path.dirname(fullPath), { recursive: true });
+  await fs.writeFile(fullPath, contents, 'utf8');
+}
+
+async function copyFile(src, relDestPath) {
+  const dest = path.join(DIST, relDestPath);
+  await fs.mkdir(path.dirname(dest), { recursive: true });
+  await fs.copyFile(src, dest);
+}
+
+function collectAllImages(data) {
+  const images = [];
+  for (const list of [data.projects, data.series, data.photos, data.journal]) {
+    for (const collection of list) {
+      for (const image of collection.images) images.push(image);
+    }
+  }
+  for (const item of data.gear) {
+    if (item.image) images.push(item.image);
+  }
+  if (data.about.data.portrait) images.push(data.aboutPortraitImage);
+  return images.filter(Boolean);
+}
+
+async function processAllImages(data) {
+  const images = collectAllImages(data);
+  let processed = 0;
+  await Promise.all(
+    images.map(async (image) => {
+      const destDir = path.join(DIST, 'media', path.dirname(image.src));
+      const baseName = path.basename(image.src, path.extname(image.src));
+      const result = await generateResponsiveImages(image.sourcePath, destDir, baseName);
+      image.rendered = { ...result, publicDir: `/media${path.dirname(image.src)}` };
+      processed += 1;
+    })
+  );
+  return processed;
+}
+
+function page(templateContent, { title, description, activeKey, canonicalPath, data, bodyClass }) {
+  return renderLayout({
+    title,
+    description,
+    activeKey,
+    canonicalPath,
+    site: data.site,
+    owner: data.owner,
+    nav: data.nav,
+    flags: data.flags,
+    bodyClass,
+    content: templateContent,
+  });
+}
+
+async function buildHome(data) {
+  const html = page(renderHome(data), {
+    title: data.site.title,
+    description: data.site.description,
+    activeKey: 'home',
+    canonicalPath: '/',
+    data,
+  });
+  await writeFile('index.html', html);
+}
+
+async function buildCollections(data, { list, typeDir, kindLabel, activeKey, title, description }) {
+  if (list.length === 0) return;
+
+  const indexHtml = page(renderCollectionsIndex({ title, description, collections: list, kindLabel }), {
+    title: `${title} — ${data.owner.name}`,
+    description,
+    activeKey,
+    canonicalPath: `/${typeDir}/`,
+    data,
+  });
+  await writeFile(`${typeDir}/index.html`, indexHtml);
+
+  for (const collection of list) {
+    const more = list.filter((c) => c.slug !== collection.slug).slice(0, 6);
+    const detailHtml = page(
+      renderCollectionDetail(collection, { backHref: `/${typeDir}/`, backLabel: `Back to ${title.toLowerCase()}`, moreCollections: more }),
+      {
+        title: `${collection.title} — ${data.owner.name}`,
+        description: collection.summary || `${collection.title} — ${kindLabel.toLowerCase()} by ${data.owner.name}.`,
+        activeKey,
+        canonicalPath: `/${typeDir}/${collection.slug}/`,
+        data,
+      }
+    );
+    await writeFile(`${typeDir}/${collection.slug}/index.html`, detailHtml);
+  }
+}
+
+async function buildThemes(data) {
+  if (data.themes.length === 0) return;
+
+  const indexHtml = page(renderThemesIndex(data.themes), {
+    title: `Themes — ${data.owner.name}`,
+    description: 'Cross-cutting visual themes across the work.',
+    activeKey: 'themes',
+    canonicalPath: '/themes/',
+    data,
+  });
+  await writeFile('themes/index.html', indexHtml);
+
+  for (const theme of data.themes) {
+    const html = page(renderThemeDetail(theme), {
+      title: `${theme.title} — Themes — ${data.owner.name}`,
+      description: `Photos tagged “${theme.tag}”.`,
+      activeKey: 'themes',
+      canonicalPath: `/themes/${theme.slug}/`,
+      data,
+    });
+    await writeFile(`themes/${theme.slug}/index.html`, html);
+  }
+}
+
+async function buildAbout(data) {
+  const html = page(
+    renderAbout({ about: data.about, owner: data.owner, portraitImage: data.aboutPortraitImage, flags: data.flags }),
+    {
+      title: `About — ${data.owner.name}`,
+      description: data.site.description,
+      activeKey: 'about',
+      canonicalPath: '/about/',
+      data,
+    }
+  );
+  await writeFile('about/index.html', html);
+}
+
+async function buildGear(data) {
+  if (!data.flags.hasGear) return;
+  const html = page(renderGear(data.gear), {
+    title: `Gear — ${data.owner.name}`,
+    description: 'The camera and kit behind the work.',
+    activeKey: 'gear',
+    canonicalPath: '/gear/',
+    data,
+  });
+  await writeFile('gear/index.html', html);
+}
+
+async function buildJournal(data) {
+  if (!data.flags.hasJournal) return;
+  const posts = data.journal.map((p) => ({ ...p, cover: p.cover, year: p.year || (p.html.match(/\d{4}/) || [])[0] }));
+
+  const indexHtml = page(renderJournalIndex(posts), {
+    title: `Journal — ${data.owner.name}`,
+    description: 'Notes and stories from behind the lens.',
+    activeKey: 'journal',
+    canonicalPath: '/journal/',
+    data,
+  });
+  await writeFile('journal/index.html', indexHtml);
+
+  for (const post of posts) {
+    const html = page(renderJournalDetail(post), {
+      title: `${post.title} — Journal — ${data.owner.name}`,
+      description: post.summary || post.title,
+      activeKey: 'journal',
+      canonicalPath: `/journal/${post.slug}/`,
+      data,
+    });
+    await writeFile(`journal/${post.slug}/index.html`, html);
+  }
+}
+
+async function build404(data) {
+  const html = page(
+    `<section class="hero wrap"><h1 class="hero-heading">404</h1><p class="hero-sub">That frame doesn't exist. <a class="text-link" href="/">Back to the homepage</a>.</p></section>`,
+    { title: `Not found — ${data.owner.name}`, description: 'Page not found.', activeKey: '', canonicalPath: '/404.html', data }
+  );
+  await writeFile('404.html', html);
+}
+
+async function copyStaticAssets() {
+  await copyFile(path.join(ROOT, 'src/styles/main.css'), 'styles/main.css');
+  await copyFile(path.join(ROOT, 'src/scripts/main.js'), 'scripts/main.js');
+  await copyFile(path.join(ROOT, 'src/assets/favicon.svg'), 'assets/favicon.svg');
+}
+
+async function writeHostingFiles(data) {
+  await writeFile('CNAME', `${DOMAIN}\n`);
+  await writeFile('.nojekyll', '');
+  await writeFile(
+    'robots.txt',
+    `User-agent: *\nAllow: /\nSitemap: ${data.site.url}/sitemap.xml\n`
+  );
+
+  const urls = ['/', '/about/'];
+  if (data.flags.hasProjects) {
+    urls.push('/projects/');
+    data.projects.forEach((c) => urls.push(`/projects/${c.slug}/`));
+  }
+  if (data.flags.hasSeries) {
+    urls.push('/series/');
+    data.series.forEach((c) => urls.push(`/series/${c.slug}/`));
+  }
+  if (data.flags.hasThemes) {
+    urls.push('/themes/');
+    data.themes.forEach((t) => urls.push(`/themes/${t.slug}/`));
+  }
+  if (data.flags.hasGear) urls.push('/gear/');
+  if (data.flags.hasJournal) {
+    urls.push('/journal/');
+    data.journal.forEach((p) => urls.push(`/journal/${p.slug}/`));
+  }
+
+  const sitemap = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls
+    .map((u) => `  <url><loc>${data.site.url}${u}</loc></url>`)
+    .join('\n')}\n</urlset>\n`;
+  await writeFile('sitemap.xml', sitemap);
+}
+
+async function main() {
+  const started = Date.now();
+  console.log('→ Loading content…');
+  const data = await loadSite(ROOT);
+
+  if (data.about.data.portrait) {
+    data.aboutPortraitImage = {
+      src: `/about/${data.about.data.portrait}`,
+      sourcePath: path.join(ROOT, data.about.data.portrait.startsWith('about/') ? data.about.data.portrait : `about/${data.about.data.portrait}`),
+      alt: `${data.owner.name} portrait`,
+    };
+  }
+
+  await fs.rm(DIST, { recursive: true, force: true });
+
+  console.log('→ Processing images…');
+  const count = await processAllImages(data);
+  console.log(`  processed ${count} image(s)`);
+
+  console.log('→ Copying static assets…');
+  await copyStaticAssets();
+
+  console.log('→ Rendering pages…');
+  await buildHome(data);
+  await buildCollections(data, {
+    list: data.projects,
+    typeDir: 'projects',
+    kindLabel: 'Project',
+    activeKey: 'projects',
+    title: 'Projects',
+    description: 'Client and commissioned work.',
+  });
+  await buildCollections(data, {
+    list: data.series,
+    typeDir: 'series',
+    kindLabel: 'Series',
+    activeKey: 'series',
+    title: 'Series',
+    description: 'Personal, ongoing bodies of work.',
+  });
+  await buildThemes(data);
+  await buildAbout(data);
+  await buildGear(data);
+  await buildJournal(data);
+  await build404(data);
+  await writeHostingFiles(data);
+
+  const ms = Date.now() - started;
+  console.log(`✓ Build complete in ${ms}ms → dist/`);
+  console.log(`  Projects: ${data.projects.length} · Series: ${data.series.length} · Themes: ${data.themes.length} · Gear: ${data.gear.length} · Journal: ${data.journal.length} · Highlights: ${data.highlights.length}`);
+}
+
+main().catch((err) => {
+  console.error('Build failed:', err);
+  process.exit(1);
+});

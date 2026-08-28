@@ -1,0 +1,32 @@
+{
+  "name": "saikatkdas-web",
+  "version": "1.0.0",
+  "description": "Saikat K Das — street photography portfolio. Static site generated from folder-based content.",
+  "main": "index.js",
+  "scripts": {
+    "build": "node scripts/build.js",
+    "dev": "node scripts/build.js && node scripts/dev-server.js",
+    "serve": "node scripts/dev-server.js",
+    "new-project": "node scripts/new-project.js",
+    "import-photos": "node scripts/import-photos.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/saikatkdas-photo/saikatkdas-web.git"
+  },
+  "keywords": [],
+  "author": "Saikat K Das",
+  "license": "MIT",
+  "type": "module",
+  "bugs": {
+    "url": "https://github.com/saikatkdas-photo/saikatkdas-web/issues"
+  },
+  "homepage": "https://github.com/saikatkdas-photo/saikatkdas-web#readme",
+  "private": "true",
+  "dependencies": {
+    "exifr": "^7.1.3",
+    "gray-matter": "^4.0.3",
+    "marked": "^18.0.11",
+    "sharp": "^0.35.4"
+  }
+}
