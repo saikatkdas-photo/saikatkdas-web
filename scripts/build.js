@@ -60,11 +60,32 @@ async function processAllImages(data) {
   return processed;
 }
 
-function firstHighlightSrc(data) {
-  const h = data.highlights?.[0]?.image?.rendered;
-  if (!h) return '';
-  const largest = h.outputs[h.outputs.length - 1];
-  return `${h.publicDir}/${largest.jpg}`;
+function pickRenderedSrc(rendered, preferWidth = 1800) {
+  if (!rendered?.outputs?.length) return '';
+  const match = rendered.outputs.find((o) => o.width === preferWidth) || rendered.outputs[rendered.outputs.length - 1];
+  return `${rendered.publicDir}/${match.jpg}`;
+}
+
+async function processIntroImages() {
+  const files = [
+    { key: 'introCanvas', file: 'canvas.jpg', alt: '' },
+    { key: 'introHero', file: 'hero.jpg', alt: 'Street workers unloading sacks from a truck' },
+  ];
+  const result = {};
+  for (const item of files) {
+    const sourcePath = path.join(ROOT, 'src/assets/intro', item.file);
+    const destDir = path.join(DIST, 'media', 'intro');
+    const baseName = path.basename(item.file, path.extname(item.file));
+    const rendered = await generateResponsiveImages(sourcePath, destDir, baseName);
+    rendered.publicDir = '/media/intro';
+    result[item.key] = {
+      src: `/intro/${item.file}`,
+      sourcePath,
+      alt: item.alt,
+      rendered,
+    };
+  }
+  return result;
 }
 
 function page(templateContent, { title, description, activeKey, canonicalPath, data, bodyClass }) {
@@ -78,7 +99,7 @@ function page(templateContent, { title, description, activeKey, canonicalPath, d
     nav: data.nav,
     flags: data.flags,
     assetVersion: data.assetVersion,
-    introImageSrc: firstHighlightSrc(data),
+    introCanvasSrc: pickRenderedSrc(data.introCanvas?.rendered),
     bodyClass,
     content: templateContent,
   });
@@ -271,7 +292,9 @@ async function main() {
 
   console.log('→ Processing images…');
   const count = await processAllImages(data);
-  console.log(`  processed ${count} image(s)`);
+  const introImages = await processIntroImages();
+  Object.assign(data, introImages);
+  console.log(`  processed ${count} image(s) + intro frames`);
 
   data.assetVersion = await computeAssetVersion();
   console.log(`→ Asset version ${data.assetVersion}`);

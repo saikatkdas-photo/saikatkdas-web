@@ -114,39 +114,34 @@ export function renderLightboxMarkup() {
   </div>`;
 }
 
-function renderHomeIntro(owner, introImageSrc) {
-  const rows = [
-    { key: 'S', dir: 'up' },
-    { key: 'K', dir: 'right' },
-    { key: 'D', dir: 'down' },
-  ];
-  const letters = rows
-    .map(
-      (r) =>
-        `<span class="intro-letter" data-letter="${r.key}" data-from="${r.dir}"><span class="intro-glyph">${r.key}</span></span>`
-    )
-    .join('');
-  const fullName = owner.name;
+function renderHomeIntro(owner, introCanvasSrc) {
   return `<div class="intro" data-intro aria-hidden="true">
     <div class="intro-stage" data-intro-stage>
-      <div class="intro-mark" data-intro-mark>${letters}<span class="intro-star" data-intro-star>(*)</span></div>
+      <div class="intro-letters" data-intro-letters>
+        <div class="intro-letter" data-letter="S" data-from="bottom">
+          <span class="intro-clip"><span class="intro-glyph">S</span></span><span class="intro-rest">aikat</span>
+        </div>
+        <div class="intro-letter" data-letter="K" data-from="right">
+          <span class="intro-clip"><span class="intro-glyph">K</span></span>
+        </div>
+        <div class="intro-letter" data-letter="D" data-from="top">
+          <span class="intro-clip"><span class="intro-glyph">D</span></span><span class="intro-rest">as</span>
+        </div>
+      </div>
+      <span class="intro-star" data-intro-star>(*)</span>
       <div class="intro-frame" data-intro-frame>
-        <div class="intro-frame-inner" data-intro-frame-inner>${introImageSrc ? `<img src="${introImageSrc}" alt="" class="intro-photo" fetchpriority="high">` : ''}</div>
-        <div class="intro-shutter intro-shutter-top" data-intro-shutter-top></div>
-        <div class="intro-shutter intro-shutter-bot" data-intro-shutter-bot></div>
+        <div class="intro-frame-inner">
+          ${introCanvasSrc ? `<img src="${introCanvasSrc}" alt="" class="intro-photo" width="1800" height="1200" fetchpriority="high">` : ''}
+        </div>
       </div>
-      <div class="intro-name" data-intro-name aria-label="${escapeHtml(fullName)}">
-        ${fullName
-          .split('')
-          .map((c, i) => `<span class="intro-name-char" style="--i:${i}">${c === ' ' ? '&nbsp;' : escapeHtml(c)}</span>`)
-          .join('')}
-      </div>
+      <div class="intro-shutter intro-shutter-top" data-intro-shutter-top></div>
+      <div class="intro-shutter intro-shutter-bot" data-intro-shutter-bot></div>
     </div>
     <div class="intro-foot"><span>Loading</span><span data-intro-count>000</span></div>
   </div>`;
 }
 
-export function renderLayout({ title, description, activeKey, site, owner, nav, flags, bodyClass = '', content, canonicalPath = '/', assetVersion = '', introImageSrc = '' }) {
+export function renderLayout({ title, description, activeKey, site, owner, nav, flags, bodyClass = '', content, canonicalPath = '/', assetVersion = '', introCanvasSrc = '' }) {
   const isHome = activeKey === 'home';
   const v = assetVersion ? `?v=${assetVersion}` : '';
   return `<!DOCTYPE html>
@@ -168,7 +163,7 @@ export function renderLayout({ title, description, activeKey, site, owner, nav, 
   <link rel="stylesheet" href="/styles/main.css${v}">
 </head>
 <body class="${bodyClass}${isHome ? ' has-intro' : ''}">
-  ${isHome ? renderHomeIntro(owner, introImageSrc) : ''}
+  ${isHome ? renderHomeIntro(owner, introCanvasSrc) : ''}
   <a class="skip-link" href="#main">Skip to content</a>
   ${renderHeader({ owner, nav, flags, activeKey })}
   <main id="main">

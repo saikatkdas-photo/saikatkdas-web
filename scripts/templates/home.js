@@ -1,4 +1,4 @@
-import { renderPicture, lightboxTriggerAttrs, escapeHtml } from './partials.js';
+import { renderPicture, escapeHtml } from './partials.js';
 
 function renderHighlightItem(highlight, index) {
   const { image, title, href } = highlight;
@@ -30,18 +30,25 @@ function renderTeaserCard(collection) {
 }
 
 export function renderHome(data) {
-  const { owner, highlights, series, projects, about, flags } = data;
+  const { owner, highlights, series, projects, about, flags, introHero } = data;
   const teaserCollections = [...series, ...projects].slice(0, 6);
 
   return `
-  <section class="hero wrap">
-    <div class="hero-top-row">
-      <h1 class="hero-heading">Streets, unscripted.</h1>
-      <span class="hero-count">(${highlights.length})</span>
+  <section class="hero">
+    <div class="hero-lead wrap">
+      <div class="hero-top-row">
+        <h1 class="hero-heading">Streets, unscripted.</h1>
+        <span class="hero-count">(${highlights.length})</span>
+      </div>
+      <p class="hero-sub">${escapeHtml(owner.tagline)}</p>
+      <div class="scroll-hint"><span class="stem"></span> Scroll</div>
     </div>
-    <p class="hero-sub">${escapeHtml(owner.tagline)}</p>
-    <div class="scroll-hint"><span class="stem"></span> Scroll</div>
-
+    ${introHero?.rendered ? `
+    <div class="hero-featured wrap">
+      <div class="hero-featured-frame">
+        ${renderPicture(introHero, { sizes: '(min-width: 900px) 86vw, 94vw', loading: 'eager', fetchpriority: 'high' })}
+      </div>
+    </div>` : ''}
     <div class="highlight-track">
       ${highlights.map((h, i) => renderHighlightItem(h, i)).join('\n')}
     </div>

@@ -3,57 +3,59 @@
 
   var reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-  /* ---------------- Welcome intro (homepage, cold load) ---------------- */
+  /* ---------------- Welcome intro (homepage reload) ---------------- */
   var intro = document.querySelector('[data-intro]');
   var introCount = document.querySelector('[data-intro-count]');
-  var SEEN_KEY = 'skd_intro_seen_v1';
+  var introStarted = false;
+  var introFinished = false;
+  var INTRO_TOTAL = 8200;
 
   function finishIntro() {
-    if (!intro) return;
+    if (!intro || introFinished) return;
+    introFinished = true;
     document.body.classList.remove('has-intro');
     document.body.classList.add('intro-done');
     intro.classList.add('is-gone');
-    try { sessionStorage.setItem(SEEN_KEY, '1'); } catch (e) {}
     window.setTimeout(function () { if (intro && intro.parentNode) intro.parentNode.removeChild(intro); }, 1100);
   }
 
   function skipIntro() {
     if (!intro) return;
+    introStarted = true;
+    introFinished = true;
     document.body.classList.remove('has-intro');
     document.body.classList.add('intro-done');
     intro.parentNode && intro.parentNode.removeChild(intro);
   }
 
   function runIntro() {
-    if (!intro) return;
-    var seen = false;
-    try { seen = sessionStorage.getItem(SEEN_KEY) === '1'; } catch (e) {}
-    if (seen || reducedMotion) { skipIntro(); return; }
+    if (!intro || introStarted) return;
+    introStarted = true;
+    if (reducedMotion) { skipIntro(); return; }
 
-    // Rolling counter 000 → 100 over the sequence
     var start = performance.now();
-    var TOTAL = 4600; // total intro duration
     function tick(now) {
-      var t = Math.min(1, (now - start) / TOTAL);
+      var t = Math.min(1, (now - start) / INTRO_TOTAL);
       if (introCount) introCount.textContent = String(Math.floor(t * 100)).padStart(3, '0');
       if (t < 1) requestAnimationFrame(tick);
     }
     requestAnimationFrame(tick);
 
-    // Phase timeline
-    // p1: 0.1s   — letters converge, (*) rises
-    // p2: 1.2s   — SKD slide left, (*) → top-right, photo frame opens
-    // p3: 2.3s   — shutters close from top/bottom to middle line
-    // p4: 3.0s   — shutters open outward, bg flips to light, name rises
-    // p5: 4.2s   — overlay slides up and out
-    window.setTimeout(function () { intro.classList.add('intro-p1'); }, 100);
-    window.setTimeout(function () { intro.classList.add('intro-p2'); }, 1200);
-    window.setTimeout(function () { intro.classList.add('intro-p3'); }, 2300);
-    window.setTimeout(function () { intro.classList.add('intro-p4', 'is-light'); }, 3000);
-    window.setTimeout(function () { intro.classList.add('intro-p5'); }, 4200);
-    window.setTimeout(finishIntro, TOTAL);
+    // p1  80ms    S from bottom, K from right, D from top → right-half stagger
+    // p2  1350ms  stack to left edge, (*) → top-right, canvas opens
+    // p3  2350ms  canvas photo fades in
+    // p4  3850ms  hold 1s then fade out
+    // p5  4450ms  shutters close, paper field
+    // p6  5250ms  shutters open, S/D expand
+    // p7  6800ms  name slides out, overlay leaves
+    window.setTimeout(function () { intro.classList.add('intro-p1'); }, 80);
+    window.setTimeout(function () { intro.classList.add('intro-p2'); }, 1350);
+    window.setTimeout(function () { intro.classList.add('intro-p3'); }, 2350);
+    window.setTimeout(function () { intro.classList.add('intro-p4'); }, 3850);
+    window.setTimeout(function () { intro.classList.add('intro-p5', 'is-light'); }, 4450);
+    window.setTimeout(function () { intro.classList.add('intro-p6'); }, 5250);
+    window.setTimeout(function () { intro.classList.add('intro-p7'); finishIntro(); }, 6800);
 
-    // Escape to skip
     document.addEventListener('keydown', function esc(e) {
       if (e.key === 'Escape') { finishIntro(); document.removeEventListener('keydown', esc); }
     });
@@ -62,10 +64,25 @@
   if (intro) {
     if (document.readyState === 'complete') runIntro();
     else window.addEventListener('load', runIntro);
-    // Safety timeout
-    window.setTimeout(function () { if (intro && intro.parentNode) runIntro(); }, 5000);
+    window.setTimeout(function () { if (!introStarted) runIntro(); }, 5000);
   } else {
     document.body.classList.add('intro-done');
+  }
+
+  /* ---------------- Highlight track: wheel maps to horizontal on desktop --- */
+  var highlightTrack = document.querySelector('.highlight-track');
+  if (highlightTrack && !reducedMotion) {
+    highlightTrack.addEventListener('wheel', function (e) {
+      if (window.matchMedia('(max-width: 799px)').matches) return;
+      if (highlightTrack.scrollWidth <= highlightTrack.clientWidth + 2) return;
+      if (Math.abs(e.deltaY) <= Math.abs(e.deltaX)) return;
+      var max = highlightTrack.scrollWidth - highlightTrack.clientWidth;
+      var atStart = highlightTrack.scrollLeft <= 0;
+      var atEnd = highlightTrack.scrollLeft >= max - 1;
+      if ((e.deltaY < 0 && atStart) || (e.deltaY > 0 && atEnd)) return;
+      e.preventDefault();
+      highlightTrack.scrollLeft += e.deltaY;
+    }, { passive: false });
   }
 
   /* ---------------- Scroll reveal ---------------- */

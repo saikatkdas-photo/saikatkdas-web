@@ -186,9 +186,10 @@ p { margin: 0; }
   padding-top: var(--sp-6);
   padding-bottom: var(--sp-7);
 }
+.hero-lead { margin-bottom: var(--sp-5); }
 .hero-heading {
   font-size: clamp(2.75rem, 9vw, 6.5rem);
-  max-width: 20ch;
+  max-width: 14ch;
 }
 .hero-count {
   font-family: var(--font-mono);
@@ -203,12 +204,36 @@ p { margin: 0; }
 }
 .hero-top-row { display: flex; justify-content: space-between; align-items: flex-start; gap: var(--sp-4); }
 
+.hero-featured {
+  margin-top: var(--sp-5);
+  margin-bottom: var(--sp-6);
+}
+.hero-featured-frame {
+  overflow: hidden;
+  border-radius: var(--radius);
+  background: var(--bg-raised);
+  aspect-ratio: 3 / 2;
+  width: 100%;
+}
+.hero-featured-frame .pic { width: 100%; height: 100%; }
+.hero-featured-frame img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+body.has-intro .hero-featured { opacity: 0; }
+body.intro-done .hero-featured {
+  animation: hero-featured-in 900ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+@keyframes hero-featured-in {
+  from { opacity: 0; transform: translateY(24px); }
+  to   { opacity: 1; transform: none; }
+}
+
 /* ---------------- Highlight gallery ---------------- */
 .highlight-track {
   display: flex;
   flex-direction: column;
   gap: var(--sp-5);
   margin-top: var(--sp-6);
+  padding-inline: var(--gutter);
 }
 
 .highlight-item { position: relative; display: block; overflow: hidden; border-radius: var(--radius); background: var(--bg-raised); }
@@ -224,8 +249,8 @@ p { margin: 0; }
     overflow-x: auto;
     overflow-y: hidden;
     scroll-snap-type: x proximity;
-    padding: var(--sp-5) 0 var(--sp-6);
-    gap: var(--sp-6);
+    padding: var(--sp-4) var(--gutter) var(--sp-7);
+    gap: clamp(1.25rem, 2.4vw, 2.75rem);
     scrollbar-width: thin;
     scrollbar-color: var(--line-strong) transparent;
     -webkit-overflow-scrolling: touch;
@@ -235,40 +260,24 @@ p { margin: 0; }
   .highlight-item {
     flex: 0 0 auto;
     scroll-snap-align: start;
-    width: 32vw; max-width: 460px;
   }
-  /* Staggered widths + vertical offsets for magazine rhythm */
-  .highlight-item:nth-child(5n+1) { width: 34vw; max-width: 480px; transform: translateY(0); }
-  .highlight-item:nth-child(5n+2) { width: 24vw; max-width: 340px; transform: translateY(6vh); }
-  .highlight-item:nth-child(5n+3) { width: 30vw; max-width: 420px; transform: translateY(2vh); }
-  .highlight-item:nth-child(5n+4) { width: 22vw; max-width: 320px; transform: translateY(9vh); }
-  .highlight-item:nth-child(5n+5) { width: 28vw; max-width: 400px; transform: translateY(3vh); }
-  .highlight-item:first-child { margin-left: var(--gutter); }
-  .highlight-item:last-child { margin-right: var(--gutter); }
+  /* Magazine stagger via margin (layout space) so overflow-x scroll does not clip */
+  .highlight-item:nth-child(5n+1) { width: min(36vw, 520px); margin-top: 0; }
+  .highlight-item:nth-child(5n+2) { width: min(20vw, 280px); margin-top: 11vh; }
+  .highlight-item:nth-child(5n+3) { width: min(30vw, 430px); margin-top: 4vh; }
+  .highlight-item:nth-child(5n+4) { width: min(18vw, 250px); margin-top: 16vh; }
+  .highlight-item:nth-child(5n+5) { width: min(26vw, 360px); margin-top: 7vh; }
 }
 
-/* Staggered slide-in reveal when intro completes on the homepage */
-body.has-intro .highlight-item { opacity: 0; transform: translateY(40px); }
+/* Slide-in after intro — opacity/translateX only, stagger lives in margin-top */
+body.has-intro .highlight-item { opacity: 0; }
 body.intro-done .highlight-item {
-  opacity: 1;
   animation: hi-slide-in 900ms cubic-bezier(0.16, 1, 0.3, 1) both;
-  animation-delay: calc(80ms * var(--hi-i, 0) + 150ms);
+  animation-delay: calc(90ms * var(--hi-i, 0) + 280ms);
 }
 @keyframes hi-slide-in {
-  from { opacity: 0; transform: translateY(40px); }
-  to   { opacity: 1; }
-}
-@media (min-width: 800px) {
-  body.intro-done .highlight-item:nth-child(5n+1) { animation-name: hi-slide-in-a; }
-  body.intro-done .highlight-item:nth-child(5n+2) { animation-name: hi-slide-in-b; }
-  body.intro-done .highlight-item:nth-child(5n+3) { animation-name: hi-slide-in-c; }
-  body.intro-done .highlight-item:nth-child(5n+4) { animation-name: hi-slide-in-d; }
-  body.intro-done .highlight-item:nth-child(5n+5) { animation-name: hi-slide-in-e; }
-  @keyframes hi-slide-in-a { from { opacity: 0; transform: translate(60px, 0); } to { opacity: 1; transform: translateY(0); } }
-  @keyframes hi-slide-in-b { from { opacity: 0; transform: translate(60px, 6vh); } to { opacity: 1; transform: translateY(6vh); } }
-  @keyframes hi-slide-in-c { from { opacity: 0; transform: translate(60px, 2vh); } to { opacity: 1; transform: translateY(2vh); } }
-  @keyframes hi-slide-in-d { from { opacity: 0; transform: translate(60px, 9vh); } to { opacity: 1; transform: translateY(9vh); } }
-  @keyframes hi-slide-in-e { from { opacity: 0; transform: translate(60px, 3vh); } to { opacity: 1; transform: translateY(3vh); } }
+  from { opacity: 0; transform: translateX(48px); }
+  to   { opacity: 1; transform: none; }
 }
 .highlight-caption {
   position: absolute; left: 0; right: 0; bottom: 0;
@@ -429,15 +438,16 @@ body.intro-done .highlight-item {
 @media (min-width: 800px) { .journal-item { grid-template-columns: 200px 1fr; } }
 .journal-date { font-family: var(--font-mono); font-size: 0.8rem; color: var(--ink-faint); }
 
-/* ---------------- Welcome intro (homepage cold-load only) ------------
-   Phases (driven by class on body.has-intro):
-   .intro-p1 : letters converge (S bottom, K right, D top) + (*) rise
-   .intro-p2 : SKD slides to left extreme, (*) moves top-right,
-               photo frame opens from center
-   .intro-p3 : shutter closes from top + bottom to a middle line
-   .intro-p4 : shutter opens outward, revealing light bg;
-               SKD morphs into full "Saikat K Das"
-   .intro-p5 : the intro overlay slides up and out
+/* ---------------- Welcome intro (homepage reload) ---------------------
+   p1 letters enter (S bottom, K right, D top) into a diagonal stagger
+      on the right half / top half; (*) sits in the right bottom half
+   p2 SKD group slides to the left edge and stacks; (*) to top-right;
+      3:2 canvas opens in the remaining centre
+   p3 canvas photo fades in
+   p4 photo holds, then fades out
+   p5 shutters close to the midline; field flips to contrast (paper)
+   p6 shutters retract; S→Saikat, D→Das (K stays)
+   p7 name slides out; overlay leaves; homepage hero is revealed
 ------------------------------------------------------------------------ */
 body.has-intro { overflow: hidden; }
 body.has-intro .site-header,
@@ -446,169 +456,239 @@ body.has-intro .site-footer { opacity: 0; }
 body.intro-done { overflow: auto; }
 body.intro-done .site-header,
 body.intro-done main,
-body.intro-done .site-footer { opacity: 1; transition: opacity 700ms var(--ease); }
+body.intro-done .site-footer { opacity: 1; transition: opacity 800ms var(--ease); }
 
 .intro {
   position: fixed; inset: 0; z-index: 400;
   background: var(--surface-dark);
   color: var(--on-dark);
   overflow: hidden;
-  transition: transform 900ms cubic-bezier(0.86, 0, 0.07, 1), opacity 300ms ease 700ms;
+  transition:
+    background 420ms ease,
+    color 420ms ease,
+    transform 900ms cubic-bezier(0.86, 0, 0.07, 1),
+    opacity 280ms ease 620ms;
 }
 .intro.is-gone { transform: translateY(-101%); opacity: 0; pointer-events: none; }
-
-/* Reveal contrast bg in phase 4 */
 .intro.is-light { background: var(--bg); color: var(--ink); }
 
-.intro-stage { position: absolute; inset: 0; }
+.intro-stage { position: absolute; inset: 0; pointer-events: none; }
 
-/* --- Letter marks --- */
-.intro-mark {
-  position: absolute; inset: 0;
+/* --- Letter group: one box so the trio moves as a unit, never clipped by the canvas --- */
+.intro-letters {
+  position: absolute;
+  z-index: 5;
+  left: 52vw;
+  top: 7vh;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
   font-family: var(--font-display);
   font-weight: 800;
-  line-height: 0.85;
-  letter-spacing: -0.04em;
-  font-size: clamp(4rem, 18vw, 16rem);
-  pointer-events: none;
+  font-size: clamp(4.25rem, 13vw, 11rem);
+  line-height: 0.82;
+  letter-spacing: -0.045em;
+  white-space: nowrap;
+  color: var(--on-dark);
+  transition:
+    left 1000ms cubic-bezier(0.16, 1, 0.3, 1),
+    top 1000ms cubic-bezier(0.16, 1, 0.3, 1),
+    font-size 1000ms cubic-bezier(0.16, 1, 0.3, 1),
+    opacity 500ms ease,
+    color 420ms ease;
 }
+.intro.intro-p2 .intro-letters,
+.intro.intro-p3 .intro-letters,
+.intro.intro-p4 .intro-letters,
+.intro.intro-p5 .intro-letters,
+.intro.intro-p6 .intro-letters {
+  left: var(--gutter);
+  top: 8vh;
+  font-size: clamp(2.6rem, 7.2vw, 6.4rem);
+}
+.intro.intro-p6 .intro-letters,
+.intro.intro-p7 .intro-letters { color: var(--ink); }
+.intro.intro-p7 .intro-letters {
+  left: var(--gutter);
+  top: 8vh;
+  font-size: clamp(2.6rem, 7.2vw, 6.4rem);
+  opacity: 0;
+  transform: translateX(-18vw);
+  transition: opacity 600ms ease, transform 800ms cubic-bezier(0.7, 0, 0.3, 1), color 420ms ease;
+}
+
 .intro-letter {
-  position: absolute; display: inline-block; overflow: hidden;
-  will-change: transform, opacity;
+  display: block;
+  will-change: transform, margin-left;
   transition:
     transform 900ms cubic-bezier(0.16, 1, 0.3, 1),
-    left 900ms cubic-bezier(0.16, 1, 0.3, 1),
-    top 900ms cubic-bezier(0.16, 1, 0.3, 1),
-    font-size 900ms cubic-bezier(0.16, 1, 0.3, 1),
-    opacity 400ms ease;
+    margin-left 1000ms cubic-bezier(0.16, 1, 0.3, 1);
 }
-.intro-glyph { display: inline-block; transform: translateY(110%); transition: transform 900ms cubic-bezier(0.16, 1, 0.3, 1); }
+.intro-letter[data-letter="S"] { transition-delay: 0ms; }
+.intro-letter[data-letter="K"] { margin-left: 0.48em; transition-delay: 110ms; }
+.intro-letter[data-letter="D"] { margin-left: 0.96em; transition-delay: 220ms; }
 
-/* Phase 1: converge to arranged positions
-   S : top-left area
-   K : middle-right vertical, slightly above center
-   D : lower-left (creates dynamic composition)                       */
-.intro-letter[data-letter="S"] { left: 8vw;  top: 12vh; }
-.intro-letter[data-letter="K"] { left: 62vw; top: 30vh; color: var(--accent); }
-.intro-letter[data-letter="D"] { left: 22vw; top: 52vh; }
+/* Collapse the diagonal indent once the group sits on the left */
+.intro.intro-p2 .intro-letter,
+.intro.intro-p3 .intro-letter,
+.intro.intro-p4 .intro-letter,
+.intro.intro-p5 .intro-letter,
+.intro.intro-p6 .intro-letter,
+.intro.intro-p7 .intro-letter {
+  margin-left: 0;
+  transition-delay: 0ms;
+}
+.intro.intro-p2 .intro-letter[data-letter="K"] { transition-delay: 70ms; }
+.intro.intro-p2 .intro-letter[data-letter="D"] { transition-delay: 140ms; }
 
-/* Initial off-screen positions (before phase 1) */
-.intro:not(.intro-p1):not(.intro-p2):not(.intro-p3):not(.intro-p4):not(.intro-p5) .intro-letter[data-letter="S"] { transform: translateY(120vh); }
-.intro:not(.intro-p1):not(.intro-p2):not(.intro-p3):not(.intro-p4):not(.intro-p5) .intro-letter[data-letter="K"] { transform: translateX(120vw); }
-.intro:not(.intro-p1):not(.intro-p2):not(.intro-p3):not(.intro-p4):not(.intro-p5) .intro-letter[data-letter="D"] { transform: translateY(-120vh); }
+.intro-clip { display: inline-block; overflow: hidden; vertical-align: bottom; }
+.intro-glyph {
+  display: inline-block;
+  transform: translateY(110%);
+  transition: transform 800ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+.intro-rest {
+  display: inline-block;
+  max-width: 0;
+  opacity: 0;
+  overflow: hidden;
+  vertical-align: bottom;
+  white-space: nowrap;
+  transition: max-width 900ms cubic-bezier(0.16, 1, 0.3, 1), opacity 400ms ease 120ms;
+}
+
+/* Off-screen entries before p1 */
+.intro:not(.intro-p1):not(.intro-p2):not(.intro-p3):not(.intro-p4):not(.intro-p5):not(.intro-p6):not(.intro-p7) .intro-letter[data-letter="S"] { transform: translateY(120vh); }
+.intro:not(.intro-p1):not(.intro-p2):not(.intro-p3):not(.intro-p4):not(.intro-p5):not(.intro-p6):not(.intro-p7) .intro-letter[data-letter="K"] { transform: translateX(110vw); }
+.intro:not(.intro-p1):not(.intro-p2):not(.intro-p3):not(.intro-p4):not(.intro-p5):not(.intro-p6):not(.intro-p7) .intro-letter[data-letter="D"] { transform: translateY(-120vh); }
+
 .intro.intro-p1 .intro-letter,
 .intro.intro-p2 .intro-letter,
 .intro.intro-p3 .intro-letter,
 .intro.intro-p4 .intro-letter,
-.intro.intro-p5 .intro-letter { transform: translate(0, 0); }
+.intro.intro-p5 .intro-letter,
+.intro.intro-p6 .intro-letter { transform: none; }
 .intro.intro-p1 .intro-glyph,
 .intro.intro-p2 .intro-glyph,
 .intro.intro-p3 .intro-glyph,
 .intro.intro-p4 .intro-glyph,
-.intro.intro-p5 .intro-glyph { transform: translateY(0); }
+.intro.intro-p5 .intro-glyph,
+.intro.intro-p6 .intro-glyph,
+.intro.intro-p7 .intro-glyph { transform: none; }
 
+/* S and D expand; K does not */
+.intro.intro-p6 .intro-rest,
+.intro.intro-p7 .intro-rest { max-width: 6.2em; opacity: 1; }
+
+/* --- Asterisk: right / bottom half, then top-right --- */
 .intro-star {
-  position: absolute; right: 8vw; bottom: 18vh;
-  font-family: var(--font-mono);
-  font-size: clamp(1.5rem, 4vw, 3rem);
+  position: absolute;
+  z-index: 5;
+  right: 7vw;
+  top: 62vh;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: clamp(2rem, 6vw, 5.5rem);
+  letter-spacing: -0.04em;
+  line-height: 1;
   color: var(--on-dark-soft);
-  opacity: 0; transform: translateY(30px);
-  transition: opacity 500ms ease, transform 700ms var(--ease), right 900ms cubic-bezier(0.16, 1, 0.3, 1), top 900ms cubic-bezier(0.16, 1, 0.3, 1), bottom 900ms cubic-bezier(0.16, 1, 0.3, 1);
+  opacity: 0;
+  transform: translateY(28px);
+  transition:
+    opacity 500ms ease,
+    transform 800ms cubic-bezier(0.16, 1, 0.3, 1),
+    right 1000ms cubic-bezier(0.16, 1, 0.3, 1),
+    top 1000ms cubic-bezier(0.16, 1, 0.3, 1),
+    font-size 1000ms cubic-bezier(0.16, 1, 0.3, 1),
+    color 420ms ease;
 }
-.intro.intro-p1 .intro-star { opacity: 1; transform: translateY(0); transition-delay: 500ms; }
+.intro.intro-p1 .intro-star { opacity: 1; transform: none; transition-delay: 420ms; }
 .intro.intro-p2 .intro-star,
 .intro.intro-p3 .intro-star,
-.intro.intro-p4 .intro-star { opacity: 1; transform: translateY(0); right: var(--gutter); top: calc(var(--sp-4) + 6px); bottom: auto; }
+.intro.intro-p4 .intro-star,
+.intro.intro-p5 .intro-star,
+.intro.intro-p6 .intro-star {
+  opacity: 1;
+  transform: none;
+  right: var(--gutter);
+  top: var(--sp-4);
+  font-size: clamp(1.8rem, 4.6vw, 3.75rem);
+  transition-delay: 0ms;
+}
+.intro.intro-p7 .intro-star { opacity: 0; }
 .intro.is-light .intro-star { color: var(--ink-soft); }
 
-/* Phase 2: SKD slide to left extreme edge, stacked */
-.intro.intro-p2 .intro-letter[data-letter="S"],
-.intro.intro-p3 .intro-letter[data-letter="S"],
-.intro.intro-p4 .intro-letter[data-letter="S"] { left: var(--gutter); top: calc(50vh - 18vh); font-size: clamp(2rem, 8vw, 6rem); }
-.intro.intro-p2 .intro-letter[data-letter="K"],
-.intro.intro-p3 .intro-letter[data-letter="K"],
-.intro.intro-p4 .intro-letter[data-letter="K"] { left: var(--gutter); top: calc(50vh - 4vh); font-size: clamp(2rem, 8vw, 6rem); }
-.intro.intro-p2 .intro-letter[data-letter="D"],
-.intro.intro-p3 .intro-letter[data-letter="D"],
-.intro.intro-p4 .intro-letter[data-letter="D"] { left: var(--gutter); top: calc(50vh + 10vh); font-size: clamp(2rem, 8vw, 6rem); }
-.intro.is-light .intro-letter[data-letter="S"],
-.intro.is-light .intro-letter[data-letter="D"] { color: var(--ink); }
-
-/* Phase 5: SKD fade out to make space for full name */
-.intro.intro-p5 .intro-letter,
-.intro.intro-p5 .intro-star { opacity: 0; }
-
-/* --- Photo frame in center (phase 2 onward) --- */
+/* --- 3:2 canvas in the remaining centre, never covering the left letters --- */
 .intro-frame {
-  position: absolute; left: 50%; top: 50%;
-  transform: translate(-50%, -50%);
-  width: 0; height: 0;
+  position: absolute;
+  z-index: 1;
+  left: 58%;
+  top: 50%;
+  width: min(46vw, 68vh * 1.5, 720px);
+  aspect-ratio: 3 / 2;
+  transform: translate(-50%, -50%) scale(0.08);
+  transform-origin: center center;
   overflow: hidden;
   background: var(--surface-dark-raised);
-  transition: width 900ms cubic-bezier(0.86, 0, 0.07, 1), height 900ms cubic-bezier(0.86, 0, 0.07, 1);
+  opacity: 0;
+  transition:
+    transform 900ms cubic-bezier(0.86, 0, 0.07, 1),
+    opacity 280ms ease;
 }
 .intro.intro-p2 .intro-frame,
-.intro.intro-p3 .intro-frame,
-.intro.intro-p4 .intro-frame {
-  width: min(56vw, 620px);
-  height: min(64vh, 640px);
+.intro.intro-p3 .intro-frame {
+  opacity: 1;
+  transform: translate(-50%, -50%) scale(1);
+}
+.intro.intro-p4 .intro-frame,
+.intro.intro-p5 .intro-frame,
+.intro.intro-p6 .intro-frame {
+  opacity: 0;
+  transform: translate(-50%, -50%) scale(1);
+  transition: opacity 480ms ease;
 }
 .intro-frame-inner { position: absolute; inset: 0; }
 .intro-photo {
   position: absolute; inset: 0;
-  width: 100%; height: 100%; object-fit: cover;
-  transform: scale(1.15);
+  width: 100%; height: 100%;
+  object-fit: cover;
   opacity: 0;
-  transition: opacity 500ms ease 300ms, transform 4000ms ease;
+  transform: scale(1.06);
+  transition: opacity 520ms ease, transform 1600ms ease;
 }
-.intro.intro-p2 .intro-photo,
-.intro.intro-p3 .intro-photo,
-.intro.intro-p4 .intro-photo { opacity: 1; transform: scale(1); }
+.intro.intro-p3 .intro-photo {
+  opacity: 1;
+  transform: scale(1);
+}
+.intro.intro-p4 .intro-photo {
+  opacity: 0;
+  transform: scale(1);
+  transition: opacity 480ms ease;
+}
 
-/* --- Shutter (two horizontal panels closing to middle) --- */
+/* --- Shutters: full-bleed, under the letters, close to the midline --- */
 .intro-shutter {
-  position: absolute; left: 0; right: 0; height: 50%;
-  background: var(--surface-dark);
-  transition: transform 700ms cubic-bezier(0.86, 0, 0.07, 1);
+  position: absolute;
+  z-index: 3;
+  left: 0; right: 0;
+  height: 50%;
+  background: var(--ink);
+  transition: transform 720ms cubic-bezier(0.86, 0, 0.07, 1), background 300ms ease;
   will-change: transform;
 }
 .intro-shutter-top { top: 0; transform: translateY(-101%); }
 .intro-shutter-bot { bottom: 0; transform: translateY(101%); }
-.intro.intro-p3 .intro-shutter-top { transform: translateY(0); }
-.intro.intro-p3 .intro-shutter-bot { transform: translateY(0); }
-.intro.intro-p4 .intro-shutter-top { transform: translateY(-101%); background: var(--bg); }
-.intro.intro-p4 .intro-shutter-bot { transform: translateY(101%); background: var(--bg); }
-
-/* --- Expanded name (phase 4) --- */
-.intro-name {
-  position: absolute; left: var(--gutter); right: var(--gutter);
-  top: 50%; transform: translateY(-50%);
-  font-family: var(--font-display);
-  font-weight: 800;
-  letter-spacing: -0.03em;
-  line-height: 0.95;
-  font-size: clamp(2.5rem, 10vw, 8rem);
-  color: var(--ink);
-  display: flex; flex-wrap: wrap;
-  pointer-events: none;
-  opacity: 0;
-}
-.intro-name-char {
-  display: inline-block;
-  transform: translateY(110%);
-  opacity: 0;
-}
-.intro.intro-p4 .intro-name,
-.intro.intro-p5 .intro-name { opacity: 1; }
-.intro.intro-p4 .intro-name-char,
-.intro.intro-p5 .intro-name-char {
-  animation: intro-char-rise 700ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
-  animation-delay: calc(40ms * var(--i, 0) + 100ms);
-}
-@keyframes intro-char-rise { to { transform: translateY(0); opacity: 1; } }
+.intro.intro-p5 .intro-shutter-top,
+.intro.intro-p5 .intro-shutter-bot { transform: translateY(0); }
+.intro.intro-p6 .intro-shutter-top,
+.intro.intro-p7 .intro-shutter-top { transform: translateY(-101%); background: var(--bg); }
+.intro.intro-p6 .intro-shutter-bot,
+.intro.intro-p7 .intro-shutter-bot { transform: translateY(101%); background: var(--bg); }
 
 .intro-foot {
-  position: absolute; left: var(--gutter); bottom: var(--sp-5);
+  position: absolute;
+  z-index: 6;
+  left: var(--gutter); bottom: var(--sp-5);
   display: flex; justify-content: space-between;
   width: calc(100% - var(--gutter) * 2);
   font-family: var(--font-mono);
@@ -617,11 +697,39 @@ body.intro-done .site-footer { opacity: 1; transition: opacity 700ms var(--ease)
   transition: color 300ms ease, opacity 300ms ease;
 }
 .intro.is-light .intro-foot { color: var(--ink-soft); }
-.intro.intro-p5 .intro-foot { opacity: 0; }
+.intro.intro-p6 .intro-foot,
+.intro.intro-p7 .intro-foot { opacity: 0; }
 [data-intro-count] { font-variant-numeric: tabular-nums; }
 
+@media (max-width: 720px) {
+  .intro-letters {
+    left: 28vw;
+    top: 8vh;
+    font-size: clamp(3.4rem, 18vw, 6.5rem);
+  }
+  .intro.intro-p2 .intro-letters,
+  .intro.intro-p3 .intro-letters,
+  .intro.intro-p4 .intro-letters,
+  .intro.intro-p5 .intro-letters,
+  .intro.intro-p6 .intro-letters,
+  .intro.intro-p7 .intro-letters {
+    left: var(--gutter);
+    top: 6vh;
+    font-size: clamp(2.1rem, 12vw, 3.4rem);
+  }
+  .intro-frame {
+    left: 50%;
+    top: 62%;
+    width: min(86vw, 520px);
+  }
+  .intro-letter[data-letter="K"] { margin-left: 0.38em; }
+  .intro-letter[data-letter="D"] { margin-left: 0.76em; }
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .intro, .intro-letter, .intro-glyph, .intro-star, .intro-frame, .intro-photo, .intro-shutter, .intro-name-char { transition: none !important; animation: none !important; }
+  .intro, .intro-letters, .intro-letter, .intro-glyph, .intro-rest, .intro-star, .intro-frame, .intro-photo, .intro-shutter {
+    transition: none !important; animation: none !important;
+  }
 }
 
 /* ---------------- Scroll reveal ---------------- */
