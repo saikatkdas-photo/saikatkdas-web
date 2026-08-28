@@ -124,9 +124,10 @@ p { margin: 0; }
   border-bottom: 1px solid var(--line);
 }
 
-.monogram {
-  font-family: var(--font-display);
-  font-weight: var(--font-display-weight);
+.monogram,
+[data-brand-type] {
+  font-family: var(--font-intro);
+  font-weight: var(--font-intro-weight);
   font-size: 1.5rem;
   letter-spacing: -0.02em;
 }
@@ -688,6 +689,8 @@ body.intro-done .site-footer { opacity: 1; transition: opacity 800ms var(--ease)
   display: flex;
   align-items: baseline;
   width: max-content;
+  font-family: var(--font-intro);
+  font-weight: var(--font-intro-weight);
   will-change: transform, margin-left;
   transition:
     transform 900ms cubic-bezier(0.16, 1, 0.3, 1),
@@ -711,6 +714,8 @@ body.intro-done .site-footer { opacity: 1; transition: opacity 800ms var(--ease)
 .intro-clip { display: inline-block; overflow: hidden; vertical-align: bottom; flex: 0 0 auto; }
 .intro-glyph {
   display: inline-block;
+  font-family: var(--font-intro);
+  font-weight: inherit;
   transform: translateY(110%);
   transition: transform 800ms cubic-bezier(0.16, 1, 0.3, 1);
 }
@@ -731,6 +736,8 @@ body.intro-done .site-footer { opacity: 1; transition: opacity 800ms var(--ease)
   display: block;
   width: max-content;
   white-space: nowrap;
+  font-family: var(--font-intro);
+  font-weight: inherit;
   transform: translateX(-0.4em);
   opacity: 0;
   transition:
@@ -768,8 +775,8 @@ body.intro-done .site-footer { opacity: 1; transition: opacity 800ms var(--ease)
   z-index: 5;
   right: var(--gutter);
   top: var(--sp-4);
-  font-family: var(--font-display);
-  font-weight: var(--font-display-weight);
+  font-family: var(--font-intro);
+  font-weight: var(--font-intro-weight);
   font-size: clamp(1.8rem, 4.6vw, 3.75rem);
   letter-spacing: -0.04em;
   line-height: 1;

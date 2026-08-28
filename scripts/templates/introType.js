@@ -1,8 +1,8 @@
-import { INTRO_FONTS, quoteFontStack } from '../lib/controls.js';
+import { INTRO_FONTS, quoteFontStack, resolveIntroFont } from '../lib/controls.js';
 import { escapeHtml } from './partials.js';
 
 export function renderIntroType(controls) {
-  const current = controls?.fonts?.intro_choice || 'barlow-condensed';
+  const current = resolveIntroFont(controls).key;
   const cards = Object.entries(INTRO_FONTS).map(([key, spec]) => `
     <a class="intro-type-card${key === current ? ' is-current' : ''}" href="/?introFont=${encodeURIComponent(key)}">
       <p class="intro-type-label">${escapeHtml(spec.name)}</p>
@@ -25,7 +25,7 @@ export function renderIntroType(controls) {
     <header class="intro-type-head">
       <p class="intro-type-kicker">Intro letters only</p>
       <h1>Pick a gaunt face for SKD</h1>
-      <p>Headings and body stay Helvetica. Each card shows the staggered entrance and the lined-up dock. Click to play the intro in that face. To keep one, set <code>fonts.intro_choice</code> in <code>data/controls.yaml</code>.</p>
+      <p>Headings and body stay Helvetica. Each card shows the staggered entrance and the lined-up dock. Click to play the intro in that face. To keep one, set <code>fonts.intro</code>, <code>fonts.intro_weight</code>, and <code>fonts.intro_google</code> in <code>data/controls.yaml</code>.</p>
     </header>
     <div class="intro-type-grid">${cards}</div>
   </section>`;

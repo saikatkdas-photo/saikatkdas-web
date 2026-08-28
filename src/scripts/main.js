@@ -25,19 +25,18 @@
     total: 11200
   }, introConfig.timings || {});
   var INTRO_TOTAL = T.total;
+  applyIntroFont(introConfig);
 
   function applyIntroFont(cfg) {
-    var letters = document.querySelector('[data-intro-letters]');
-    if (!letters) return;
     var key = cfg.introFont && cfg.introFont.key;
     try {
       var q = new URLSearchParams(window.location.search).get('introFont');
       if (q) key = q;
     } catch (err) {}
     var spec = (cfg.introFonts && cfg.introFonts[key]) || cfg.introFont;
-    if (!spec) return;
-    letters.style.fontFamily = spec.family;
-    if (spec.weight) letters.style.fontWeight = spec.weight;
+    if (!spec || !spec.family) return;
+    document.documentElement.style.setProperty('--font-intro', spec.family);
+    if (spec.weight) document.documentElement.style.setProperty('--font-intro-weight', String(spec.weight));
   }
 
   function finishIntro() {
@@ -82,7 +81,7 @@
   function runIntro() {
     if (!intro || introStarted) return;
     introStarted = true;
-    if (introConfig.honorReduced !== false && reducedMotion) { skipIntro(); return; }
+    if (introConfig.honorReduced !== false && reducedMotion) { applyIntroFont(introConfig); skipIntro(); return; }
     if (introConfig.playOn === 'once') {
       try {
         if (window.sessionStorage.getItem('skd-intro-played')) { skipIntro(); return; }

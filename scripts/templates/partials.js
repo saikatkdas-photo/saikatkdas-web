@@ -1,4 +1,4 @@
-import { controlsToCss, introRuntimeConfig, googleFontsHref, INTRO_FONTS } from '../lib/controls.js';
+import { controlsToCss, introRuntimeConfig, googleFontsHref, INTRO_FONTS, resolveIntroFont } from '../lib/controls.js';
 
 export function escapeHtml(value) {
   return String(value ?? '')
@@ -64,7 +64,7 @@ export function lightboxTriggerAttrs(image) {
 export function renderHeader({ owner, nav, flags, activeKey }) {
   const items = visibleNav(nav, flags);
   return `<header class="site-header">
-    <a href="/" class="monogram">${escapeHtml(owner.monogram)}</a>
+    <a href="/" class="monogram" data-brand-type>${escapeHtml(owner.monogram)}</a>
     <button type="button" class="menu-toggle" data-nav-toggle aria-expanded="false" aria-controls="nav-overlay">
       <span class="bars" aria-hidden="true"><span></span><span></span><span></span></span>
       Menu
@@ -154,9 +154,12 @@ export function renderLayout({ title, description, activeKey, site, owner, nav, 
   const showIntro = Boolean(isHome && flags?.hasIntro);
   const v = assetVersion ? `?v=${assetVersion}` : '';
   const tokenCss = controls ? controlsToCss(controls) : '';
+  const chosenIntro = controls ? resolveIntroFont(controls).google : '';
   const googleFamilies = extraGoogleFamilies.length
     ? extraGoogleFamilies
-    : (showIntro ? Object.values(INTRO_FONTS).map((f) => f.google) : []);
+    : (showIntro
+        ? Object.values(INTRO_FONTS).map((f) => f.google)
+        : (chosenIntro ? [chosenIntro] : []));
   const googleHref = controls ? googleFontsHref(controls, googleFamilies) : '';
   const google = googleHref ? `<link rel="stylesheet" href="${googleHref}">` : '';
   const introConfig = controls ? introRuntimeConfig(controls) : {};

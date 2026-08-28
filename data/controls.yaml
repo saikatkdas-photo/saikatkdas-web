@@ -26,9 +26,17 @@ fonts:
   body: "Helvetica Neue, Helvetica, IBM Plex Sans, Arial, sans-serif"
   mono: "IBM Plex Mono, ui-monospace, monospace"
   display_weight: 700
-  # Intro SKD only. Body/headings stay Helvetica.
-  # Options: oswald | barlow-condensed | alumni-sans | sofia-sans-condensed | big-shoulders-display
+  # SKD intro letters + header logo. Headings/body stay on `display`.
+  intro: "Barlow Condensed, Arial-BoldMT,Arial-Regular, Arial, sans-serif"
+  intro_weight: 800
+  intro_google: "Barlow+Condensed:wght@500;600;700"
+  # Optional shorthand; used if `intro` is omitted. Also marks the current card on /intro-type/.
   intro_choice: barlow-condensed
+  # Other gaunt stacks to paste into intro / intro_weight / intro_google:
+  #   Oswald:                "Oswald, Helvetica Neue, sans-serif" / 500 / Oswald:wght@500;600;700
+  #   Alumni Sans:           "Alumni Sans, Helvetica Neue, sans-serif" / 600 / Alumni+Sans:wght@500;600;700
+  #   Sofia Sans Condensed:  "Sofia Sans Condensed, Helvetica Neue, sans-serif" / 600 / Sofia+Sans+Condensed:wght@500;600;700
+  #   Big Shoulders Display: "Big Shoulders Display, Helvetica Neue, sans-serif" / 600 / Big+Shoulders+Display:wght@500;600;700
   # Loaded from Google as a Helvetica-like fallback (Apple already has Helvetica Neue)
   google: "IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500"
 

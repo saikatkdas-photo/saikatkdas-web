@@ -27,6 +27,9 @@ export const CONTROL_DEFAULTS = {
     mono: 'IBM Plex Mono, ui-monospace, monospace',
     display_weight: 700,
     google: 'IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500',
+    intro: 'Barlow Condensed, Arial-BoldMT,Arial-Regular, Arial, sans-serif',
+    intro_weight: 800,
+    intro_google: 'Barlow+Condensed:wght@500;600;700;800',
     intro_choice: 'barlow-condensed',
   },
   colors: {
@@ -141,14 +144,29 @@ export const INTRO_FONTS = {
 };
 
 export function resolveIntroFont(controls) {
-  const key = controls?.fonts?.intro_choice || 'barlow-condensed';
-  return { key, ...(INTRO_FONTS[key] || INTRO_FONTS['barlow-condensed']) };
+  const f = controls?.fonts || {};
+  const key = f.intro_choice || 'barlow-condensed';
+  const catalog = INTRO_FONTS[key] || INTRO_FONTS['barlow-condensed'];
+  const stack = (typeof f.intro === 'string' && f.intro.trim()) ? f.intro : catalog.stack;
+  const weight = f.intro_weight != null ? Number(f.intro_weight) : catalog.weight;
+  const google = (typeof f.intro_google === 'string' && f.intro_google.trim()) ? f.intro_google : catalog.google;
+  const matched = Object.entries(INTRO_FONTS).find(([, spec]) => spec.stack === stack);
+  return {
+    key: matched ? matched[0] : (f.intro ? 'custom' : key),
+    name: stack.split(',')[0].trim(),
+    note: catalog.note,
+    stack,
+    weight: Number.isFinite(weight) ? weight : 600,
+    google,
+  };
 }
 
 export function googleFontsHref(controls, extraFamilies = []) {
   const parts = [];
   if (controls?.fonts?.google) parts.push(controls.fonts.google);
-  for (const fam of extraFamilies) {
+  const introGoogle = resolveIntroFont(controls).google;
+  const extras = [...(introGoogle ? [introGoogle] : []), ...extraFamilies];
+  for (const fam of extras) {
     const id = String(fam).split(':')[0];
     if (fam && !parts.some((part) => part.includes(id))) parts.push(fam);
   }

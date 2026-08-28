@@ -177,13 +177,15 @@ and the rest). Light page surfaces and dark sections both live in this block.
 
 `fonts.display`, `fonts.body`, `fonts.mono` are CSS font stacks.
 `fonts.display_weight` is the heading weight (700 for Helvetica).
-`fonts.intro_choice` is the gaunt face used **only** on the intro SKD letters.
-Options: `oswald`, `barlow-condensed` (default), `alumni-sans`,
-`sofia-sans-condensed`, `big-shoulders-display`. Compare them at
-`/intro-type/` (not in the nav). Preview on the real intro with
-`/?introFont=oswald`.
-`fonts.google` is the Google Fonts family query used as a fallback; leave it
-empty to skip the webfont request.
+`fonts.intro`, `fonts.intro_weight`, and `fonts.intro_google` are the face for
+**intro SKD letters and the header SKD logo**. Paste another stack from the
+comments in `data/controls.yaml` to switch. `fonts.intro_choice` is an optional
+shorthand (`oswald`, `barlow-condensed`, `alumni-sans`, `sofia-sans-condensed`,
+`big-shoulders-display`) used if `intro` is omitted, and to mark the current
+card on `/intro-type/`. Preview with `/?introFont=oswald`. Rebuild after
+changing the yaml (`npm run build`).
+`fonts.google` is the Google Fonts family query for body/display fallbacks;
+leave it empty to skip that webfont request.
 
 ### Section flags
 
