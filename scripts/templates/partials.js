@@ -33,7 +33,8 @@ export function renderPicture(image, { sizes = '100vw', loading = 'lazy', fetchp
   const jpgSrcset = outputs.map((o) => `${publicDir}/${o.jpg} ${o.width}w`).join(', ');
   const fallback = `${publicDir}/${outputs[outputs.length - 1].jpg}`;
   const priorityAttr = fetchpriority ? ` fetchpriority="${fetchpriority}"` : '';
-  return `<picture>
+  const ratio = width && height ? `${width} / ${height}` : 'auto';
+  return `<picture class="pic" style="aspect-ratio:${ratio};">
     <source type="image/webp" srcset="${webpSrcset}" sizes="${sizes}">
     <img src="${fallback}" srcset="${jpgSrcset}" sizes="${sizes}" width="${width}" height="${height}" alt="${escapeHtml(image.alt)}" loading="${loading}"${priorityAttr} decoding="async">
   </picture>`;
@@ -132,7 +133,16 @@ export function renderLayout({ title, description, activeKey, site, owner, nav, 
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="/styles/main.css">
 </head>
-<body class="${bodyClass}">
+<body class="${bodyClass} is-loading">
+  <div class="page-loader" data-page-loader aria-hidden="true">
+    <div class="page-loader-inner">
+      <div class="pl-row pl-row-1"><span class="pl-word" data-pl-word="Saikat">${'Saikat'.split('').map((c) => `<span class="pl-char">${c}</span>`).join('')}</span></div>
+      <div class="pl-row pl-row-2"><span class="pl-word" data-pl-word="K">${'K'.split('').map((c) => `<span class="pl-char">${c}</span>`).join('')}</span></div>
+      <div class="pl-row pl-row-3"><span class="pl-word" data-pl-word="Das">${'Das'.split('').map((c) => `<span class="pl-char">${c}</span>`).join('')}</span></div>
+      <div class="pl-row pl-row-4"><span class="pl-star">(*)</span></div>
+    </div>
+    <div class="page-loader-foot"><span>Loading</span><span class="pl-count" data-pl-count>0</span></div>
+  </div>
   <a class="skip-link" href="#main">Skip to content</a>
   ${renderHeader({ owner, nav, flags, activeKey })}
   <main id="main">
