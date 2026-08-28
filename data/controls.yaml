@@ -1,0 +1,74 @@
+---
+# Site control knobs. Edit this file, then run `npm run build`.
+# Missing keys fall back to the defaults in scripts/lib/controls.js.
+
+intro:
+  enabled: true
+  # reload = play on every homepage load; once = skip after first visit
+  play_on: reload
+  timings:
+    letters_in: 80          # ms: SKD enters
+    canvas_open: 1200       # ms: photo frame fills the viewport
+    photo_in: 2100          # ms: photo fades in (still zoomed in)
+    photo_zoom: 2800        # ms: zoom-out toward a device fit
+    shutter: 5600           # ms: shutters wipe the photo (SKD stays)
+    name_expand: 6600       # ms: SKD extends to Saikat K Das
+    name_out: 8600          # ms: name leaves, homepage shows
+    total: 10400            # ms: loading counter duration
+  photo_zoom_start: 1.72    # scale at fade-in (tight crop; zoom-out travels further)
+  photo_zoom_end: 1.0       # scale after zoom-out
+  # On short landscape viewports, zoom-out uses contain so the frame fits
+  photo_fit_landscape: contain
+
+fonts:
+  display: "Helvetica Neue, Helvetica, IBM Plex Sans, Arial, sans-serif"
+  body: "Helvetica Neue, Helvetica, IBM Plex Sans, Arial, sans-serif"
+  mono: "IBM Plex Mono, ui-monospace, monospace"
+  display_weight: 700
+  # Loaded from Google as a Helvetica-like fallback (Apple already has Helvetica Neue)
+  google: "IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500"
+
+colors:
+  bg: "#ECEAE4"
+  bg_raised: "#E2DFD6"
+  ink: "#17160F"
+  ink_soft: "#55534A"
+  ink_faint: "#8B8A7E"
+  line: "rgba(23, 22, 15, 0.14)"
+  line_strong: "rgba(23, 22, 15, 0.28)"
+  accent: "#B4491F"
+  accent_ink: "#FCEFE6"
+  surface_dark: "#17160F"
+  surface_dark_raised: "#211F16"
+  on_dark: "#ECEAE4"
+  on_dark_soft: "#B3B1A5"
+  on_dark_line: "rgba(236, 234, 228, 0.16)"
+
+sections:
+  intro: true
+  hero: true
+  selected: true
+  selected_strip: true
+  work_previews: true
+  about: true
+  # These also hide when the matching content folder is empty
+  projects: true
+  series: true
+  themes: true
+  gear: true
+  journal: true
+
+selected_strip:
+  enabled: true
+  # Keys from data/site.json nav. Empty folders / false section flags drop out.
+  items: [series, themes, about]
+
+motion:
+  honor_reduced: true
+  # jitter = seeded random hang (landscape vs portrait); linear = repeating stair; none = flush
+  highlight_stagger: jitter
+
+layout:
+  highlight_track_min_height: "52dvh"
+  selected_min_height: "100dvh"
+---

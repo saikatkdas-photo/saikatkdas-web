@@ -3,6 +3,7 @@ import path from 'node:path';
 import matter from 'gray-matter';
 import { renderMarkdown } from './markdown.js';
 import { slugify, titleFromSlug } from './slug.js';
+import { loadControls } from './controls.js';
 
 const IMAGE_EXTENSIONS = new Set(['.jpg', '.jpeg', '.png', '.webp']);
 
@@ -212,6 +213,7 @@ function collectHighlights(allCollections) {
 export async function loadSite(rootDir) {
   const siteConfigRaw = await fs.readFile(path.join(rootDir, 'data', 'site.json'), 'utf8');
   const siteConfig = JSON.parse(siteConfigRaw);
+  const controls = await loadControls(rootDir);
 
   const about = await readMatter(path.join(rootDir, 'about.md'));
 
@@ -227,10 +229,13 @@ export async function loadSite(rootDir) {
   const themes = buildThemes(allGalleryCollections);
   const highlights = collectHighlights(allGalleryCollections);
 
+  const sectionOn = (key) => controls.sections?.[key] !== false;
+
   return {
     site: siteConfig.site,
     owner: siteConfig.owner,
     nav: siteConfig.nav,
+    controls,
     about: { data: about.data, html: renderMarkdown(about.content) },
     projects,
     series,
@@ -240,11 +245,17 @@ export async function loadSite(rootDir) {
     themes,
     highlights,
     flags: {
-      hasProjects: projects.length > 0,
-      hasSeries: series.length > 0,
-      hasThemes: themes.length > 0,
-      hasGear: gear.length > 0,
-      hasJournal: journal.length > 0,
+      hasProjects: projects.length > 0 && sectionOn('projects'),
+      hasSeries: series.length > 0 && sectionOn('series'),
+      hasThemes: themes.length > 0 && sectionOn('themes'),
+      hasGear: gear.length > 0 && sectionOn('gear'),
+      hasJournal: journal.length > 0 && sectionOn('journal'),
+      hasIntro: Boolean(controls.intro?.enabled && sectionOn('intro')),
+      hasHero: sectionOn('hero'),
+      hasSelected: sectionOn('selected'),
+      hasSelectedStrip: Boolean(controls.selected_strip?.enabled && sectionOn('selected_strip')),
+      hasWorkPreviews: sectionOn('work_previews'),
+      hasAboutTeaser: sectionOn('about'),
     },
   };
 }

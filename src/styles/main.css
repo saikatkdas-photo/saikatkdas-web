@@ -1,13 +1,10 @@
 /* ============================================================
    Saikat K Das — Photography
-   Design system: warm-neutral editorial, alternating light/dark
-   sections, big display type, minimal chrome. Mobile-first.
+   Tokens (color, type, intro zoom) are injected from data/controls.yaml
+   at build time into #site-tokens. Fallbacks below keep the file renderable.
    ============================================================ */
 
-@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Outfit:wght@400;500;600&family=Sora:wght@700;800&display=swap');
-
 :root {
-  /* Color */
   --bg: #ECEAE4;
   --bg-raised: #E2DFD6;
   --ink: #17160F;
@@ -23,11 +20,15 @@
   --on-dark-soft: #B3B1A5;
   --on-dark-line: rgba(236, 234, 228, 0.16);
 
-  /* Type: Sora (bold, wide grotesk) + Outfit (clean body) */
-  --font-display: 'Sora', 'Helvetica Neue', Helvetica, sans-serif;
-  --font-body: 'Outfit', 'Helvetica Neue', Helvetica, sans-serif;
+  --font-display: 'Helvetica Neue', Helvetica, 'IBM Plex Sans', Arial, sans-serif;
+  --font-body: 'Helvetica Neue', Helvetica, 'IBM Plex Sans', Arial, sans-serif;
   --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
+  --font-display-weight: 700;
   --header-h: 4.5rem;
+  --intro-zoom-start: 1.72;
+  --intro-zoom-end: 1;
+  --highlight-track-min-h: 52dvh;
+  --selected-min-h: 100dvh;
 
   /* Space (8px base) */
   --sp-1: 0.5rem;
@@ -72,7 +73,7 @@ img { max-width: 100%; display: block; }
 a { color: inherit; text-decoration: none; }
 ul { list-style: none; margin: 0; padding: 0; }
 button { font: inherit; color: inherit; background: none; border: none; cursor: pointer; }
-h1, h2, h3, h4 { font-family: var(--font-display); font-weight: 800; line-height: 0.95; margin: 0; letter-spacing: -0.03em; text-wrap: balance; }
+h1, h2, h3, h4 { font-family: var(--font-display); font-weight: var(--font-display-weight); line-height: 0.95; margin: 0; letter-spacing: -0.025em; text-wrap: balance; }
 p { margin: 0; }
 
 .wrap {
@@ -123,7 +124,7 @@ p { margin: 0; }
 
 .monogram {
   font-family: var(--font-display);
-  font-weight: 800;
+  font-weight: var(--font-display-weight);
   font-size: 1.5rem;
   letter-spacing: -0.02em;
 }
@@ -167,7 +168,7 @@ p { margin: 0; }
   border-bottom: 1px solid var(--on-dark-line);
   font-family: var(--font-display);
   font-size: clamp(1.75rem, 6vw, 3.5rem);
-  font-weight: 800;
+  font-weight: var(--font-display-weight);
 }
 .nav-overlay-item .idx { font-family: var(--font-mono); font-size: 0.9rem; color: var(--on-dark-soft); }
 .nav-overlay-item.is-active { color: var(--accent); }
@@ -192,8 +193,8 @@ p { margin: 0; }
 .hero-heading {
   font-size: clamp(2.75rem, 8.5vw, 6.75rem);
   max-width: 12ch;
-  font-weight: 800;
-  letter-spacing: -0.05em;
+  font-weight: var(--font-display-weight);
+  letter-spacing: -0.035em;
 }
 .hero-count {
   font-family: var(--font-mono);
@@ -243,8 +244,10 @@ body.intro-done .hero-featured {
   display: flex;
   flex-direction: column;
   justify-content: flex-start;
+  min-height: 100svh;
+  min-height: var(--selected-min-h, 100dvh);
   padding-top: calc(var(--header-h) + var(--sp-3));
-  padding-bottom: var(--sp-6);
+  padding-bottom: max(var(--sp-4), env(safe-area-inset-bottom, 0px));
   background: var(--bg);
   touch-action: pan-y;
 }
@@ -257,7 +260,7 @@ body.intro-done .hero-featured {
 }
 .selected-title {
   font-size: clamp(1.5rem, 3vw, 2.25rem);
-  font-weight: 800;
+  font-weight: var(--font-display-weight);
 }
 .selected-count {
   font-family: var(--font-mono);
@@ -269,55 +272,75 @@ body.intro-done .hero-featured {
   display: flex;
   flex-direction: row;
   flex-wrap: nowrap;
-  align-items: flex-start;
-  gap: clamp(1rem, 2vw, 2.25rem);
+  align-items: flex-end;
+  gap: clamp(0.7rem, 2.2vw, 2rem);
+  min-height: var(--highlight-track-min-h);
   overflow-x: hidden;
   overflow-y: hidden;
   overscroll-behavior-x: contain;
   scroll-snap-type: none;
   touch-action: pan-y;
   cursor: grab;
-  padding: var(--sp-3) var(--gutter) var(--sp-6);
-  scrollbar-width: thin;
-  scrollbar-color: var(--line-strong) transparent;
+  padding: var(--sp-2) var(--gutter) var(--sp-3);
+  scrollbar-width: none;
   -webkit-overflow-scrolling: touch;
 }
 .highlight-track:active { cursor: grabbing; }
-.highlight-track::-webkit-scrollbar { height: 6px; }
-.highlight-track::-webkit-scrollbar-thumb { background: var(--line-strong); border-radius: 3px; }
+.highlight-track::-webkit-scrollbar { display: none; }
 
 .highlight-item {
   position: relative;
   display: block;
   flex: 0 0 auto;
-  width: min(78vw, 420px);
+  width: min(var(--hi-w, 72vw), 520px);
   overflow: hidden;
   border-radius: var(--radius);
   background: var(--bg-raised);
   user-select: none;
 }
+.highlight-item[data-align="start"] {
+  align-self: flex-start;
+  margin-top: var(--hi-lift, 0px);
+  margin-bottom: 0;
+}
+.highlight-item[data-align="center"] {
+  align-self: center;
+  margin-top: calc(var(--hi-lift, 0px) * 0.4);
+  margin-bottom: calc(var(--hi-lift, 0px) * 0.6);
+}
+.highlight-item[data-align="end"] {
+  align-self: flex-end;
+  margin-top: 0;
+  margin-bottom: var(--hi-lift, 0px);
+}
+.highlight-item[data-shape="land"] { width: min(var(--hi-w, 78vw), 620px); }
+.highlight-item[data-shape="port"] { width: min(var(--hi-w, 46vw), 340px); }
+.highlight-track[data-stagger="linear"] .highlight-item:nth-child(3n+1) { align-self: flex-start; margin-top: 8vh; margin-bottom: 0; }
+.highlight-track[data-stagger="linear"] .highlight-item:nth-child(3n+2) { align-self: center; margin-top: 4vh; margin-bottom: 6vh; }
+.highlight-track[data-stagger="linear"] .highlight-item:nth-child(3n) { align-self: flex-end; margin-top: 0; margin-bottom: 10vh; }
+.highlight-track[data-stagger="none"] .highlight-item { align-self: flex-end; margin-top: 0; margin-bottom: 0; }
 .highlight-item .frame { overflow: hidden; }
 .highlight-item .pic { display: block; width: 100%; overflow: hidden; }
 .highlight-item img { width: 100%; height: auto; display: block; transition: transform var(--dur-med) var(--ease); pointer-events: none; }
 .highlight-item:hover img { transform: scale(1.04); }
 
-@media (min-width: 800px) {
-  .highlight-item:nth-child(5n+1) { width: min(34vw, 480px); margin-top: 0; }
-  .highlight-item:nth-child(5n+2) { width: min(18vw, 250px); margin-top: 7vh; }
-  .highlight-item:nth-child(5n+3) { width: min(28vw, 400px); margin-top: 2vh; }
-  .highlight-item:nth-child(5n+4) { width: min(16vw, 230px); margin-top: 10vh; }
-  .highlight-item:nth-child(5n+5) { width: min(24vw, 340px); margin-top: 4vh; }
-}
-
-/* Slide-in after intro — opacity/translateX only, stagger lives in margin-top */
+/* Slide-in on the frame so jitter (margins/align) is not overwritten */
 body.has-intro .highlight-item { opacity: 0; }
 body.intro-done .highlight-item {
+  animation: hi-fade-in 700ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation-delay: calc(90ms * var(--hi-i, 0) + 280ms);
+}
+body.intro-done .highlight-item .frame {
   animation: hi-slide-in 900ms cubic-bezier(0.16, 1, 0.3, 1) both;
   animation-delay: calc(90ms * var(--hi-i, 0) + 280ms);
 }
+@keyframes hi-fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
 @keyframes hi-slide-in {
-  from { opacity: 0; transform: translateX(48px); }
-  to   { opacity: 1; transform: none; }
+  from { transform: translateX(48px); }
+  to   { transform: none; }
 }
 .highlight-caption {
   position: absolute; left: 0; right: 0; bottom: 0;
@@ -330,6 +353,37 @@ body.intro-done .highlight-item {
 .highlight-caption .meta { font-family: var(--font-mono); font-size: 0.7rem; opacity: 0.85; }
 .highlight-caption .arrow { font-size: 1.3rem; transition: transform var(--dur-fast) var(--ease); }
 .highlight-item:hover .arrow { transform: translate(3px, -3px); }
+
+.selected-strip {
+  margin-top: auto;
+  padding: var(--sp-4) var(--gutter) var(--sp-3);
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr auto;
+  align-items: baseline;
+  width: 100%;
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: clamp(0.95rem, 3.4vw, 1.15rem);
+  letter-spacing: 0.06em;
+  text-transform: lowercase;
+  background: none;
+}
+.selected-strip a {
+  color: var(--ink);
+  padding: 0.35rem 0;
+  justify-self: center;
+}
+.selected-strip a:first-child { justify-self: start; }
+.selected-strip a:last-of-type { justify-self: end; }
+.selected-strip a:hover { color: var(--accent); }
+.selected-strip-star {
+  color: var(--ink-faint);
+  font-weight: 400;
+  pointer-events: none;
+  justify-self: center;
+  padding: 0 0.4em;
+}
 
 /* ---------------- Work previews (vertical scroll, name over image) --- */
 .work-previews {
@@ -380,7 +434,7 @@ body.intro-done .highlight-item {
 }
 .work-preview-name {
   font-family: var(--font-display);
-  font-weight: 800;
+  font-weight: var(--font-display-weight);
   font-size: clamp(2.75rem, 8vw, 6.5rem);
   letter-spacing: -0.03em;
   line-height: 0.9;
@@ -540,11 +594,12 @@ body.intro-done .highlight-item {
 .journal-date { font-family: var(--font-mono); font-size: 0.8rem; color: var(--ink-faint); }
 
 /* ---------------- Welcome intro (homepage reload) ---------------------
-   p1 letters enter into right-half stagger
-   p2 SKD slides left, (*) top-right, canvas scales to fill the viewport
-   p3 photo fades in and holds (full visual viewport)
-   p5 shutters wipe the photo (no separate fade-out)
-   p6 shutters open; S/D clip-expand into Saikat / Das
+   p1 SKD enters at the expand position and stays there
+   p2 canvas fills the viewport (letters do not move)
+   p3 photo fades in, still zoomed in
+   p4 photo zooms out to fit the device
+   p5 shutters wipe the photo (SKD stays on top)
+   p6 S/D clip-expand into Saikat / Das
    p7 name slides out; overlay leaves
 ------------------------------------------------------------------------ */
 body.has-intro { overflow: hidden; }
@@ -558,6 +613,7 @@ body.intro-done .site-footer { opacity: 1; transition: opacity 800ms var(--ease)
 
 .intro {
   position: fixed; inset: 0; z-index: 400;
+  isolation: isolate;
   width: 100%;
   height: 100svh;
   height: 100dvh;
@@ -578,40 +634,39 @@ body.intro-done .site-footer { opacity: 1; transition: opacity 800ms var(--ease)
 .intro-letters {
   position: absolute;
   z-index: 5;
-  left: 52vw;
-  top: 7vh;
+  left: var(--gutter);
+  top: max(8vh, env(safe-area-inset-top, 0px));
   display: flex;
   flex-direction: column;
   align-items: flex-start;
   font-family: var(--font-display);
-  font-weight: 800;
-  font-size: clamp(4.5rem, 14vw, 12rem);
+  font-weight: var(--font-display-weight);
+  font-size: clamp(2.8rem, 8vw, 7.2rem);
   line-height: 0.8;
-  letter-spacing: -0.04em;
+  letter-spacing: -0.03em;
   white-space: nowrap;
   color: var(--on-dark);
   transition:
-    left 1000ms cubic-bezier(0.16, 1, 0.3, 1),
-    top 1000ms cubic-bezier(0.16, 1, 0.3, 1),
-    font-size 1000ms cubic-bezier(0.16, 1, 0.3, 1),
     opacity 500ms ease,
-    color 520ms ease;
+    color 520ms ease,
+    mix-blend-mode 0s,
+    text-shadow 420ms ease;
 }
+/* High-key intro frames would swallow cream type — difference keeps SKD visible
+   in the same left stack until the name expands. */
 .intro.intro-p2 .intro-letters,
 .intro.intro-p3 .intro-letters,
-.intro.intro-p5 .intro-letters,
-.intro.intro-p6 .intro-letters {
-  left: var(--gutter);
-  top: 8vh;
-  font-size: clamp(2.8rem, 8vw, 7.2rem);
+.intro.intro-p4 .intro-letters {
+  mix-blend-mode: difference;
 }
-.intro.intro-p5 .intro-letters { z-index: 2; }
+.intro.intro-p5 .intro-letters,
 .intro.intro-p6 .intro-letters,
-.intro.intro-p7 .intro-letters { color: var(--ink); z-index: 5; }
 .intro.intro-p7 .intro-letters {
-  left: var(--gutter);
-  top: 8vh;
-  font-size: clamp(2.8rem, 8vw, 7.2rem);
+  mix-blend-mode: normal;
+  color: var(--ink);
+  text-shadow: none;
+}
+.intro.intro-p7 .intro-letters {
   opacity: 0;
   transform: translateX(-18vw);
   transition: opacity 600ms ease, transform 800ms cubic-bezier(0.7, 0, 0.3, 1), color 420ms ease;
@@ -630,16 +685,13 @@ body.intro-done .site-footer { opacity: 1; transition: opacity 800ms var(--ease)
 .intro-letter[data-letter="K"] { margin-left: 0.48em; transition-delay: 110ms; }
 .intro-letter[data-letter="D"] { margin-left: 0.96em; transition-delay: 220ms; }
 
-.intro.intro-p2 .intro-letter,
-.intro.intro-p3 .intro-letter,
-.intro.intro-p5 .intro-letter,
 .intro.intro-p6 .intro-letter,
 .intro.intro-p7 .intro-letter {
   margin-left: 0;
   transition-delay: 0ms;
 }
-.intro.intro-p2 .intro-letter[data-letter="K"] { transition-delay: 70ms; }
-.intro.intro-p2 .intro-letter[data-letter="D"] { transition-delay: 140ms; }
+.intro.intro-p6 .intro-letter[data-letter="K"] { transition-delay: 40ms; }
+.intro.intro-p6 .intro-letter[data-letter="D"] { transition-delay: 80ms; }
 
 .intro-clip { display: inline-block; overflow: hidden; vertical-align: bottom; flex: 0 0 auto; }
 .intro-glyph {
@@ -678,18 +730,20 @@ body.intro-done .site-footer { opacity: 1; transition: opacity 800ms var(--ease)
   opacity: 1;
 }
 
-.intro:not(.intro-p1):not(.intro-p2):not(.intro-p3):not(.intro-p5):not(.intro-p6):not(.intro-p7) .intro-letter[data-letter="S"] { transform: translateY(120vh); }
-.intro:not(.intro-p1):not(.intro-p2):not(.intro-p3):not(.intro-p5):not(.intro-p6):not(.intro-p7) .intro-letter[data-letter="K"] { transform: translateX(110vw); }
-.intro:not(.intro-p1):not(.intro-p2):not(.intro-p3):not(.intro-p5):not(.intro-p6):not(.intro-p7) .intro-letter[data-letter="D"] { transform: translateY(-120vh); }
+.intro:not(.intro-p1):not(.intro-p2):not(.intro-p3):not(.intro-p4):not(.intro-p5):not(.intro-p6):not(.intro-p7) .intro-letter[data-letter="S"] { transform: translateY(120vh); }
+.intro:not(.intro-p1):not(.intro-p2):not(.intro-p3):not(.intro-p4):not(.intro-p5):not(.intro-p6):not(.intro-p7) .intro-letter[data-letter="K"] { transform: translateX(110vw); }
+.intro:not(.intro-p1):not(.intro-p2):not(.intro-p3):not(.intro-p4):not(.intro-p5):not(.intro-p6):not(.intro-p7) .intro-letter[data-letter="D"] { transform: translateY(-120vh); }
 
 .intro.intro-p1 .intro-letter,
 .intro.intro-p2 .intro-letter,
 .intro.intro-p3 .intro-letter,
+.intro.intro-p4 .intro-letter,
 .intro.intro-p5 .intro-letter,
 .intro.intro-p6 .intro-letter { transform: none; }
 .intro.intro-p1 .intro-glyph,
 .intro.intro-p2 .intro-glyph,
 .intro.intro-p3 .intro-glyph,
+.intro.intro-p4 .intro-glyph,
 .intro.intro-p5 .intro-glyph,
 .intro.intro-p6 .intro-glyph,
 .intro.intro-p7 .intro-glyph { transform: none; }
@@ -697,11 +751,11 @@ body.intro-done .site-footer { opacity: 1; transition: opacity 800ms var(--ease)
 .intro-star {
   position: absolute;
   z-index: 5;
-  right: 7vw;
-  top: 62vh;
+  right: var(--gutter);
+  top: var(--sp-4);
   font-family: var(--font-display);
-  font-weight: 800;
-  font-size: clamp(2rem, 6vw, 5.5rem);
+  font-weight: var(--font-display-weight);
+  font-size: clamp(1.8rem, 4.6vw, 3.75rem);
   letter-spacing: -0.04em;
   line-height: 1;
   color: var(--on-dark-soft);
@@ -710,23 +764,14 @@ body.intro-done .site-footer { opacity: 1; transition: opacity 800ms var(--ease)
   transition:
     opacity 500ms ease,
     transform 800ms cubic-bezier(0.16, 1, 0.3, 1),
-    right 1000ms cubic-bezier(0.16, 1, 0.3, 1),
-    top 1000ms cubic-bezier(0.16, 1, 0.3, 1),
-    font-size 1000ms cubic-bezier(0.16, 1, 0.3, 1),
     color 420ms ease;
 }
-.intro.intro-p1 .intro-star { opacity: 1; transform: none; transition-delay: 420ms; }
+.intro.intro-p1 .intro-star,
 .intro.intro-p2 .intro-star,
 .intro.intro-p3 .intro-star,
+.intro.intro-p4 .intro-star,
 .intro.intro-p5 .intro-star,
-.intro.intro-p6 .intro-star {
-  opacity: 1;
-  transform: none;
-  right: var(--gutter);
-  top: var(--sp-4);
-  font-size: clamp(1.8rem, 4.6vw, 3.75rem);
-  transition-delay: 0ms;
-}
+.intro.intro-p6 .intro-star { opacity: 1; transform: none; }
 .intro.intro-p7 .intro-star { opacity: 0; }
 .intro.is-light .intro-star { color: var(--ink-soft); }
 
@@ -748,6 +793,7 @@ body.intro-done .site-footer { opacity: 1; transition: opacity 800ms var(--ease)
 }
 .intro.intro-p2 .intro-frame,
 .intro.intro-p3 .intro-frame,
+.intro.intro-p4 .intro-frame,
 .intro.intro-p5 .intro-frame {
   opacity: 1;
   transform: scale(1);
@@ -771,13 +817,31 @@ body.intro-done .site-footer { opacity: 1; transition: opacity 800ms var(--ease)
   object-fit: cover;
   object-position: center;
   opacity: 0;
-  transform: scale(1.06);
-  transition: opacity 700ms ease, transform 2800ms ease;
+  transform: scale(var(--intro-zoom-start));
+  transform-origin: center center;
+  transition: opacity 700ms ease, transform 2400ms cubic-bezier(0.16, 1, 0.3, 1);
 }
-.intro.intro-p3 .intro-photo,
+.intro.intro-p3 .intro-photo {
+  opacity: 1;
+  transform: scale(var(--intro-zoom-start));
+}
+.intro.intro-p4 .intro-photo,
 .intro.intro-p5 .intro-photo {
   opacity: 1;
-  transform: scale(1);
+  transform: scale(var(--intro-zoom-end));
+}
+@media (orientation: landscape) and (max-height: 540px) {
+  /* Contain from the start so zoom-out is a true scale-to-fit, not an object-fit snap */
+  .intro-photo {
+    object-fit: contain;
+    min-width: 0;
+    min-height: 0;
+  }
+  .intro-fit-cover .intro-photo {
+    object-fit: cover;
+    min-width: 100%;
+    min-height: 100%;
+  }
 }
 
 .intro-shutter {
@@ -816,15 +880,6 @@ body.intro-done .site-footer { opacity: 1; transition: opacity 800ms var(--ease)
 
 @media (max-width: 720px) {
   .intro-letters {
-    left: 28vw;
-    top: max(8vh, env(safe-area-inset-top, 0px));
-    font-size: clamp(3.6rem, 20vw, 6.8rem);
-  }
-  .intro.intro-p2 .intro-letters,
-  .intro.intro-p3 .intro-letters,
-  .intro.intro-p5 .intro-letters,
-  .intro.intro-p6 .intro-letters,
-  .intro.intro-p7 .intro-letters {
     left: var(--gutter);
     top: max(6vh, env(safe-area-inset-top, 0px));
     font-size: clamp(2.2rem, 13vw, 3.6rem);

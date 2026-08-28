@@ -22,6 +22,7 @@ gear/<slug>.md            → one file per camera/lens, with an optional same-fo
 journal/<slug>/           → blog-style posts (optional)
 about.md                  → bio text shown on the About page
 data/site.json            → your name, tagline, email, Instagram, nav labels
+data/controls.yaml        → intro timings, colors, fonts, section on/off flags
 ```
 
 Nothing above is committed to being permanent — **any section with zero content
@@ -133,12 +134,71 @@ pre-filled `readme.md`, so you don't have to remember the frontmatter shape.
 
 ## Design system
 
-Warm-neutral editorial look, alternating light/dark sections, big display
-type, minimal chrome, mobile-first (the homepage gallery stacks vertically
-on phones and only becomes a horizontal scroller at wider viewports).
-Tokens live as CSS custom properties at the top of `src/styles/main.css` —
-color, type, spacing, radius, motion. Fonts: Bricolage Grotesque (display),
-IBM Plex Sans (body), IBM Plex Mono (labels/EXIF chips).
+Warm-neutral editorial look, big Helvetica-like display type, minimal chrome,
+mobile-first. Color, type, intro timing, and section flags live in
+`data/controls.yaml` and are compiled into CSS variables plus a small JSON
+blob on the homepage intro. Change a knob, then `npm run build`.
+
+Default type: Helvetica Neue / Helvetica, with IBM Plex Sans as the web
+fallback, and IBM Plex Mono for labels and EXIF.
+
+## Control knobs (`data/controls.yaml`)
+
+This is the file to edit when you want to restyle or retune the site without
+opening CSS or JS. Keys you omit keep the defaults in `scripts/lib/controls.js`.
+
+### Intro timings
+
+Under `intro.timings`, every value is milliseconds from page load:
+
+| Key | What it does |
+|---|---|
+| `letters_in` | SKD letters enter |
+| `canvas_open` | Photo frame fills the viewport |
+| `photo_in` | Photo fades in, still zoomed in |
+| `photo_zoom` | Zoom-out toward a device fit |
+| `shutter` | Shutters wipe the photo (SKD stays put) |
+| `name_expand` | SKD extends to Saikat K Das |
+| `name_out` | Name leaves, homepage shows |
+| `total` | Loading counter duration |
+
+Also here: `intro.enabled`, `intro.play_on` (`reload` or `once`),
+`photo_zoom_start` (default `1.72` — how tight the photo starts),
+`photo_zoom_end` (default `1.0` — the fit after zoom-out), and
+`photo_fit_landscape` (`contain` on short landscape screens, or `cover`).
+
+### Colors
+
+`colors.*` maps 1:1 onto CSS variables (`bg`, `ink`, `accent`, `surface_dark`,
+and the rest). Light page surfaces and dark sections both live in this block.
+
+### Fonts
+
+`fonts.display`, `fonts.body`, `fonts.mono` are CSS font stacks.
+`fonts.display_weight` is the heading weight (700 for Helvetica).
+`fonts.google` is the Google Fonts family query used as a fallback; leave it
+empty to skip the webfont request.
+
+### Section flags
+
+`sections.intro`, `hero`, `selected`, `selected_strip`, `work_previews`,
+`about`, `projects`, `series`, `themes`, `gear`, `journal`. Set any of these
+to `false` to hide that block. Projects / series / themes / gear / journal
+also hide automatically when their content folder is empty.
+
+### Other knobs
+
+- `selected_strip.items`: nav keys shown as the floating `series * themes * about` strip
+- `motion.highlight_stagger`: `jitter` (default), `linear`, or `none`
+- `motion.honor_reduced`: skip the intro when the OS asks for reduced motion
+- `layout.highlight_track_min_height` / `selected_min_height`: Selected gallery height
+
+After edits:
+
+```bash
+npm run build
+npm run serve
+```
 
 ## Deployment (GitHub Pages + custom domain)
 

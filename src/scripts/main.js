@@ -8,7 +8,22 @@
   var introCount = document.querySelector('[data-intro-count]');
   var introStarted = false;
   var introFinished = false;
-  var INTRO_TOTAL = 10000;
+  var introConfig = { timings: {}, playOn: 'reload', honorReduced: true, photoFitLandscape: 'contain' };
+  try {
+    var cfgEl = document.querySelector('[data-intro-config]');
+    if (cfgEl) introConfig = Object.assign(introConfig, JSON.parse(cfgEl.textContent));
+  } catch (err) {}
+  var T = Object.assign({
+    letters_in: 80,
+    canvas_open: 1200,
+    photo_in: 2100,
+    photo_zoom: 2800,
+    shutter: 5600,
+    name_expand: 6600,
+    name_out: 8600,
+    total: 10400
+  }, introConfig.timings || {});
+  var INTRO_TOTAL = T.total;
 
   function finishIntro() {
     if (!intro || introFinished) return;
@@ -52,9 +67,16 @@
   function runIntro() {
     if (!intro || introStarted) return;
     introStarted = true;
-    if (reducedMotion) { skipIntro(); return; }
+    if (introConfig.honorReduced !== false && reducedMotion) { skipIntro(); return; }
+    if (introConfig.playOn === 'once') {
+      try {
+        if (window.sessionStorage.getItem('skd-intro-played')) { skipIntro(); return; }
+        window.sessionStorage.setItem('skd-intro-played', '1');
+      } catch (err) {}
+    }
 
     bindIntroViewport(intro);
+    if (introConfig.photoFitLandscape === 'cover') intro.classList.add('intro-fit-cover');
 
     var start = performance.now();
     function tick(now) {
@@ -64,18 +86,13 @@
     }
     requestAnimationFrame(tick);
 
-    // p1  80ms     S/K/D enter
-    // p2  1200ms   slide left, canvas fills the visual viewport
-    // p3  2100ms   photo fades in
-    // p5  5100ms   hold ~2s after fade, then shutters wipe the photo
-    // p6  6100ms   shutters open, S/D expand into the name
-    // p7  8200ms   name slides out
-    window.setTimeout(function () { intro.classList.add('intro-p1'); }, 80);
-    window.setTimeout(function () { intro.classList.add('intro-p2'); }, 1200);
-    window.setTimeout(function () { intro.classList.add('intro-p3'); }, 2100);
-    window.setTimeout(function () { intro.classList.add('intro-p5', 'is-light'); }, 5100);
-    window.setTimeout(function () { intro.classList.add('intro-p6'); }, 6100);
-    window.setTimeout(function () { intro.classList.add('intro-p7'); finishIntro(); }, 8200);
+    window.setTimeout(function () { intro.classList.add('intro-p1'); }, T.letters_in);
+    window.setTimeout(function () { intro.classList.add('intro-p2'); }, T.canvas_open);
+    window.setTimeout(function () { intro.classList.add('intro-p3'); }, T.photo_in);
+    window.setTimeout(function () { intro.classList.add('intro-p4'); }, T.photo_zoom);
+    window.setTimeout(function () { intro.classList.add('intro-p5', 'is-light'); }, T.shutter);
+    window.setTimeout(function () { intro.classList.add('intro-p6'); }, T.name_expand);
+    window.setTimeout(function () { intro.classList.add('intro-p7'); finishIntro(); }, T.name_out);
 
     document.addEventListener('keydown', function esc(e) {
       if (e.key === 'Escape') { finishIntro(); document.removeEventListener('keydown', esc); }

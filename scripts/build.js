@@ -98,6 +98,7 @@ function page(templateContent, { title, description, activeKey, canonicalPath, d
     owner: data.owner,
     nav: data.nav,
     flags: data.flags,
+    controls: data.controls,
     assetVersion: data.assetVersion,
     introCanvasSrc: pickRenderedSrc(data.introCanvas?.rendered),
     bodyClass,
@@ -106,7 +107,7 @@ function page(templateContent, { title, description, activeKey, canonicalPath, d
 }
 
 async function computeAssetVersion() {
-  const files = ['src/styles/main.css', 'src/scripts/main.js'];
+  const files = ['src/styles/main.css', 'src/scripts/main.js', 'data/controls.yaml'];
   const hash = crypto.createHash('sha1');
   for (const rel of files) {
     hash.update(await fs.readFile(path.join(ROOT, rel)));

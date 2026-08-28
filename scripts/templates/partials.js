@@ -1,3 +1,5 @@
+import { controlsToCss, introRuntimeConfig } from '../lib/controls.js';
+
 export function escapeHtml(value) {
   return String(value ?? '')
     .replace(/&/g, '&amp;')
@@ -118,8 +120,10 @@ function restWord(text) {
   return `<span class="intro-rest"><span class="intro-rest-inner"><span class="intro-rest-word">${escapeHtml(text)}</span></span></span>`;
 }
 
-function renderHomeIntro(owner, introCanvasSrc) {
+function renderHomeIntro(owner, introCanvasSrc, introConfig) {
+  const configJson = JSON.stringify(introConfig || {}).replace(/</g, '\\u003c');
   return `<div class="intro" data-intro aria-hidden="true">
+    <script type="application/json" data-intro-config>${configJson}</script>
     <div class="intro-stage" data-intro-stage>
       <div class="intro-letters" data-intro-letters>
         <div class="intro-letter" data-letter="S" data-from="bottom">
@@ -145,9 +149,15 @@ function renderHomeIntro(owner, introCanvasSrc) {
   </div>`;
 }
 
-export function renderLayout({ title, description, activeKey, site, owner, nav, flags, bodyClass = '', content, canonicalPath = '/', assetVersion = '', introCanvasSrc = '' }) {
+export function renderLayout({ title, description, activeKey, site, owner, nav, flags, controls, bodyClass = '', content, canonicalPath = '/', assetVersion = '', introCanvasSrc = '' }) {
   const isHome = activeKey === 'home';
+  const showIntro = Boolean(isHome && flags?.hasIntro);
   const v = assetVersion ? `?v=${assetVersion}` : '';
+  const tokenCss = controls ? controlsToCss(controls) : '';
+  const google = controls?.fonts?.google
+    ? `<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=${controls.fonts.google}&display=swap">`
+    : '';
+  const introConfig = controls ? introRuntimeConfig(controls) : {};
   return `<!DOCTYPE html>
 <html lang="${site.language || 'en'}">
 <head>
@@ -164,10 +174,12 @@ export function renderLayout({ title, description, activeKey, site, owner, nav, 
   <link rel="icon" type="image/svg+xml" href="/assets/favicon.svg">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  ${google}
   <link rel="stylesheet" href="/styles/main.css${v}">
+  <style id="site-tokens">${tokenCss}</style>
 </head>
-<body class="${bodyClass}${isHome ? ' has-intro' : ''}">
-  ${isHome ? renderHomeIntro(owner, introCanvasSrc) : ''}
+<body class="${bodyClass}${showIntro ? ' has-intro' : ''}">
+  ${showIntro ? renderHomeIntro(owner, introCanvasSrc, introConfig) : ''}
   <a class="skip-link" href="#main">Skip to content</a>
   ${renderHeader({ owner, nav, flags, activeKey })}
   <main id="main">
