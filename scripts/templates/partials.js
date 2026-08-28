@@ -89,7 +89,7 @@ export function renderFooter({ owner }) {
       </div>
       <div class="footer-links">
         <a href="mailto:${owner.email}">${owner.email}</a>
-        <a href="${owner.instagram}" target="_blank" rel="me noopener">Instagram — ${escapeHtml(owner.instagramHandle)}</a>
+        <a href="${owner.instagram}" target="_blank" rel="me noopener">Instagram ${escapeHtml(owner.instagramHandle)}</a>
       </div>
     </div>
     <div class="wrap footer-bottom">
@@ -114,18 +114,22 @@ export function renderLightboxMarkup() {
   </div>`;
 }
 
+function restWord(text) {
+  return `<span class="intro-rest"><span class="intro-rest-inner"><span class="intro-rest-word">${escapeHtml(text)}</span></span></span>`;
+}
+
 function renderHomeIntro(owner, introCanvasSrc) {
   return `<div class="intro" data-intro aria-hidden="true">
     <div class="intro-stage" data-intro-stage>
       <div class="intro-letters" data-intro-letters>
         <div class="intro-letter" data-letter="S" data-from="bottom">
-          <span class="intro-clip"><span class="intro-glyph">S</span></span><span class="intro-rest">aikat</span>
+          <span class="intro-clip"><span class="intro-glyph">S</span></span>${restWord('aikat')}
         </div>
         <div class="intro-letter" data-letter="K" data-from="right">
           <span class="intro-clip"><span class="intro-glyph">K</span></span>
         </div>
         <div class="intro-letter" data-letter="D" data-from="top">
-          <span class="intro-clip"><span class="intro-glyph">D</span></span><span class="intro-rest">as</span>
+          <span class="intro-clip"><span class="intro-glyph">D</span></span>${restWord('as')}
         </div>
       </div>
       <span class="intro-star" data-intro-star>(*)</span>

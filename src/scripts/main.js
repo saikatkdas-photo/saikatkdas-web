@@ -8,7 +8,7 @@
   var introCount = document.querySelector('[data-intro-count]');
   var introStarted = false;
   var introFinished = false;
-  var INTRO_TOTAL = 8200;
+  var INTRO_TOTAL = 10000;
 
   function finishIntro() {
     if (!intro || introFinished) return;
@@ -17,6 +17,7 @@
     document.body.classList.add('intro-done');
     intro.classList.add('is-gone');
     window.setTimeout(function () { if (intro && intro.parentNode) intro.parentNode.removeChild(intro); }, 1100);
+    window.dispatchEvent(new Event('resize'));
   }
 
   function skipIntro() {
@@ -26,12 +27,34 @@
     document.body.classList.remove('has-intro');
     document.body.classList.add('intro-done');
     intro.parentNode && intro.parentNode.removeChild(intro);
+    window.dispatchEvent(new Event('resize'));
+  }
+
+  function bindIntroViewport(el) {
+    function apply() {
+      var vv = window.visualViewport;
+      if (!vv) return;
+      el.style.left = vv.offsetLeft + 'px';
+      el.style.top = vv.offsetTop + 'px';
+      el.style.width = vv.width + 'px';
+      el.style.height = vv.height + 'px';
+      el.style.right = 'auto';
+      el.style.bottom = 'auto';
+    }
+    apply();
+    window.addEventListener('resize', apply);
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener('resize', apply);
+      window.visualViewport.addEventListener('scroll', apply);
+    }
   }
 
   function runIntro() {
     if (!intro || introStarted) return;
     introStarted = true;
     if (reducedMotion) { skipIntro(); return; }
+
+    bindIntroViewport(intro);
 
     var start = performance.now();
     function tick(now) {
@@ -41,20 +64,18 @@
     }
     requestAnimationFrame(tick);
 
-    // p1  80ms    S from bottom, K from right, D from top → right-half stagger
-    // p2  1350ms  stack to left edge, (*) → top-right, canvas opens
-    // p3  2350ms  canvas photo fades in
-    // p4  3850ms  hold 1s then fade out
-    // p5  4450ms  shutters close, paper field
-    // p6  5250ms  shutters open, S/D expand
-    // p7  6800ms  name slides out, overlay leaves
+    // p1  80ms     S/K/D enter
+    // p2  1200ms   slide left, canvas fills the visual viewport
+    // p3  2100ms   photo fades in
+    // p5  5100ms   hold ~2s after fade, then shutters wipe the photo
+    // p6  6100ms   shutters open, S/D expand into the name
+    // p7  8200ms   name slides out
     window.setTimeout(function () { intro.classList.add('intro-p1'); }, 80);
-    window.setTimeout(function () { intro.classList.add('intro-p2'); }, 1350);
-    window.setTimeout(function () { intro.classList.add('intro-p3'); }, 2350);
-    window.setTimeout(function () { intro.classList.add('intro-p4'); }, 3850);
-    window.setTimeout(function () { intro.classList.add('intro-p5', 'is-light'); }, 4450);
-    window.setTimeout(function () { intro.classList.add('intro-p6'); }, 5250);
-    window.setTimeout(function () { intro.classList.add('intro-p7'); finishIntro(); }, 6800);
+    window.setTimeout(function () { intro.classList.add('intro-p2'); }, 1200);
+    window.setTimeout(function () { intro.classList.add('intro-p3'); }, 2100);
+    window.setTimeout(function () { intro.classList.add('intro-p5', 'is-light'); }, 5100);
+    window.setTimeout(function () { intro.classList.add('intro-p6'); }, 6100);
+    window.setTimeout(function () { intro.classList.add('intro-p7'); finishIntro(); }, 8200);
 
     document.addEventListener('keydown', function esc(e) {
       if (e.key === 'Escape') { finishIntro(); document.removeEventListener('keydown', esc); }
@@ -69,25 +90,92 @@
     document.body.classList.add('intro-done');
   }
 
-  /* ---------------- Highlight track: wheel maps to horizontal on desktop --- */
-  var highlightTrack = document.querySelector('.highlight-track');
-  if (highlightTrack && !reducedMotion) {
+  /* ---------------- Selected: pin + convert vertical scroll to horizontal --- */
+  var selectedSection = document.querySelector('[data-selected]');
+  var selectedSticky = document.querySelector('[data-selected-sticky]');
+  var highlightTrack = document.querySelector('[data-highlight-track]') || document.querySelector('.highlight-track');
+  if (selectedSection && selectedSticky && highlightTrack) {
+    var extraX = 0;
+
+    function measureSelected() {
+      extraX = Math.max(0, highlightTrack.scrollWidth - highlightTrack.clientWidth);
+      selectedSection.style.height = extraX > 8
+        ? (selectedSticky.offsetHeight + extraX) + 'px'
+        : '';
+      syncSelected();
+    }
+
+    function syncSelected() {
+      if (extraX <= 0) return;
+      var top = selectedSection.getBoundingClientRect().top;
+      var scrolled = Math.min(extraX, Math.max(0, -top));
+      if (Math.abs(highlightTrack.scrollLeft - scrolled) > 0.5) {
+        highlightTrack.scrollLeft = scrolled;
+      }
+    }
+
+    var selectedTick = false;
+    function onSelectedScroll() {
+      if (selectedTick) return;
+      selectedTick = true;
+      requestAnimationFrame(function () {
+        syncSelected();
+        selectedTick = false;
+      });
+    }
+
+    window.addEventListener('scroll', onSelectedScroll, { passive: true });
+    window.addEventListener('resize', measureSelected);
+    if (typeof ResizeObserver !== 'undefined') {
+      new ResizeObserver(measureSelected).observe(highlightTrack);
+    }
+    highlightTrack.querySelectorAll('img').forEach(function (img) {
+      if (!img.complete) img.addEventListener('load', measureSelected);
+    });
+    window.setTimeout(measureSelected, 60);
+    window.setTimeout(measureSelected, 800);
+
     highlightTrack.addEventListener('wheel', function (e) {
-      if (window.matchMedia('(max-width: 799px)').matches) return;
-      if (highlightTrack.scrollWidth <= highlightTrack.clientWidth + 2) return;
-      if (Math.abs(e.deltaY) <= Math.abs(e.deltaX)) return;
-      var max = highlightTrack.scrollWidth - highlightTrack.clientWidth;
-      var atStart = highlightTrack.scrollLeft <= 0;
-      var atEnd = highlightTrack.scrollLeft >= max - 1;
-      if ((e.deltaY < 0 && atStart) || (e.deltaY > 0 && atEnd)) return;
+      if (extraX <= 2) return;
+      if (Math.abs(e.deltaY) <= Math.abs(e.deltaX) && e.deltaX !== 0) return;
       e.preventDefault();
-      highlightTrack.scrollLeft += e.deltaY;
+      window.scrollBy(0, e.deltaY + e.deltaX);
     }, { passive: false });
+
+    var drag = { active: false, moved: false, startX: 0, startY: 0, pointerId: null };
+    highlightTrack.addEventListener('pointerdown', function (e) {
+      if (e.pointerType === 'touch') return;
+      drag.active = true;
+      drag.moved = false;
+      drag.startX = e.clientX;
+      drag.startY = window.scrollY;
+      drag.pointerId = e.pointerId;
+      highlightTrack.setPointerCapture(e.pointerId);
+    });
+    highlightTrack.addEventListener('pointermove', function (e) {
+      if (!drag.active) return;
+      var dx = e.clientX - drag.startX;
+      if (Math.abs(dx) > 4) drag.moved = true;
+      window.scrollTo(0, drag.startY - dx);
+    });
+    function endDrag(e) {
+      if (!drag.active) return;
+      drag.active = false;
+      if (e && drag.pointerId != null) {
+        try { highlightTrack.releasePointerCapture(drag.pointerId); } catch (err) {}
+      }
+    }
+    highlightTrack.addEventListener('pointerup', endDrag);
+    highlightTrack.addEventListener('pointercancel', endDrag);
+    highlightTrack.addEventListener('click', function (e) {
+      if (drag.moved) { e.preventDefault(); e.stopPropagation(); }
+      drag.moved = false;
+    }, true);
   }
 
   /* ---------------- Scroll reveal ---------------- */
   var revealTargets = document.querySelectorAll(
-    '.card, .gallery-item, .journal-item, .gear-item, .section-head, .hero-heading, .hero-sub, .hero-count, .detail-title, .detail-cover, .about-copy, .about-facts, .fact'
+    '.card, .gallery-item, .journal-item, .gear-item, .section-head, .hero-heading, .hero-sub, .hero-count, .detail-title, .detail-cover, .about-copy, .about-facts, .fact, .selected-head'
   );
   revealTargets.forEach(function (el) { el.classList.add('reveal'); });
 
