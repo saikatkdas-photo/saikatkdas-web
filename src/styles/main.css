@@ -24,6 +24,8 @@
   --font-body: 'Helvetica Neue', Helvetica, 'IBM Plex Sans', Arial, sans-serif;
   --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
   --font-display-weight: 700;
+  --font-intro: 'Barlow Condensed', 'Helvetica Neue', sans-serif;
+  --font-intro-weight: 600;
   --header-h: 4.5rem;
   --intro-zoom-start: 1.72;
   --intro-zoom-end: 1;
@@ -594,8 +596,9 @@ body.intro-done .highlight-item .frame {
 .journal-date { font-family: var(--font-mono); font-size: 0.8rem; color: var(--ink-faint); }
 
 /* ---------------- Welcome intro (homepage reload) ---------------------
-   p1 SKD enters at the expand position and stays there
-   p2 canvas fills the viewport (letters do not move)
+   p1 staggered SKD enters in the middle of the right half
+   dock: stack travels to the left and lines up (S / K / D)
+   p2 canvas fills the viewport (letters stay docked)
    p3 photo fades in, still zoomed in
    p4 photo zooms out to fit the device
    p5 shutters wipe the photo (SKD stays on top)
@@ -634,23 +637,32 @@ body.intro-done .site-footer { opacity: 1; transition: opacity 800ms var(--ease)
 .intro-letters {
   position: absolute;
   z-index: 5;
-  left: var(--gutter);
-  top: max(8vh, env(safe-area-inset-top, 0px));
+  left: 75%;
+  top: 50%;
+  transform: translate(-50%, -50%);
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  font-family: var(--font-display);
-  font-weight: var(--font-display-weight);
-  font-size: clamp(2.8rem, 8vw, 7.2rem);
-  line-height: 0.8;
-  letter-spacing: -0.03em;
+  font-family: var(--font-intro);
+  font-weight: var(--font-intro-weight);
+  font-size: clamp(3.2rem, 9vw, 8rem);
+  line-height: 0.78;
+  letter-spacing: -0.02em;
   white-space: nowrap;
   color: var(--on-dark);
   transition:
+    left 1100ms cubic-bezier(0.22, 1, 0.36, 1),
+    top 1100ms cubic-bezier(0.22, 1, 0.36, 1),
+    transform 1100ms cubic-bezier(0.22, 1, 0.36, 1),
     opacity 500ms ease,
     color 520ms ease,
     mix-blend-mode 0s,
     text-shadow 420ms ease;
+}
+.intro.intro-dock .intro-letters {
+  left: var(--gutter);
+  top: 50%;
+  transform: translate(0, -50%);
 }
 /* High-key intro frames would swallow cream type — difference keeps SKD visible
    in the same left stack until the name expands. */
@@ -666,9 +678,9 @@ body.intro-done .site-footer { opacity: 1; transition: opacity 800ms var(--ease)
   color: var(--ink);
   text-shadow: none;
 }
-.intro.intro-p7 .intro-letters {
+.intro.intro-dock.intro-p7 .intro-letters {
   opacity: 0;
-  transform: translateX(-18vw);
+  transform: translate(-18vw, -50%);
   transition: opacity 600ms ease, transform 800ms cubic-bezier(0.7, 0, 0.3, 1), color 420ms ease;
 }
 
@@ -682,14 +694,17 @@ body.intro-done .site-footer { opacity: 1; transition: opacity 800ms var(--ease)
     margin-left 1000ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 .intro-letter[data-letter="S"] { transition-delay: 0ms; }
-.intro-letter[data-letter="K"] { margin-left: 0.48em; transition-delay: 110ms; }
-.intro-letter[data-letter="D"] { margin-left: 0.96em; transition-delay: 220ms; }
+.intro-letter[data-letter="K"] { margin-left: 0.85em; transition-delay: 110ms; }
+.intro-letter[data-letter="D"] { margin-left: 1.7em; transition-delay: 220ms; }
 
+.intro.intro-dock .intro-letter,
 .intro.intro-p6 .intro-letter,
 .intro.intro-p7 .intro-letter {
   margin-left: 0;
   transition-delay: 0ms;
 }
+.intro.intro-dock .intro-letter[data-letter="K"] { transition-delay: 90ms; }
+.intro.intro-dock .intro-letter[data-letter="D"] { transition-delay: 180ms; }
 .intro.intro-p6 .intro-letter[data-letter="K"] { transition-delay: 40ms; }
 .intro.intro-p6 .intro-letter[data-letter="D"] { transition-delay: 80ms; }
 
@@ -880,12 +895,10 @@ body.intro-done .site-footer { opacity: 1; transition: opacity 800ms var(--ease)
 
 @media (max-width: 720px) {
   .intro-letters {
-    left: var(--gutter);
-    top: max(6vh, env(safe-area-inset-top, 0px));
-    font-size: clamp(2.2rem, 13vw, 3.6rem);
+    font-size: clamp(2.6rem, 16vw, 4.2rem);
   }
-  .intro-letter[data-letter="K"] { margin-left: 0.38em; }
-  .intro-letter[data-letter="D"] { margin-left: 0.76em; }
+  .intro-letter[data-letter="K"] { margin-left: 0.7em; }
+  .intro-letter[data-letter="D"] { margin-left: 1.4em; }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -893,6 +906,81 @@ body.intro-done .site-footer { opacity: 1; transition: opacity 800ms var(--ease)
     transition: none !important; animation: none !important;
   }
 }
+
+/* ---------------- Intro type specimen -------------------------------- */
+.intro-type { padding-block: var(--sp-8); }
+.intro-type-kicker {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}
+.intro-type-head h1 { margin-top: var(--sp-2); }
+.intro-type-head p {
+  max-width: 54ch;
+  margin-top: var(--sp-3);
+  color: var(--ink-soft);
+}
+.intro-type-head code {
+  font-family: var(--font-mono);
+  font-size: 0.85em;
+}
+.intro-type-grid {
+  display: grid;
+  gap: var(--sp-6);
+  margin-top: var(--sp-7);
+  border-top: 1px solid var(--line);
+}
+@media (min-width: 900px) {
+  .intro-type-grid { grid-template-columns: repeat(5, minmax(0, 1fr)); gap: var(--sp-5); }
+}
+.intro-type-card {
+  display: block;
+  padding-top: var(--sp-4);
+  border-top: 1px solid transparent;
+}
+.intro-type-card.is-current { border-top-color: var(--ink); }
+.intro-type-label {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+.intro-type-sample { margin-top: var(--sp-5); }
+.intro-type-stagger,
+.intro-type-lined {
+  margin: 0;
+  line-height: 0.78;
+  letter-spacing: -0.02em;
+}
+.intro-type-stagger { font-size: clamp(3.2rem, 7vw, 5rem); }
+.intro-type-stagger span,
+.intro-type-lined span { display: block; }
+.intro-type-stagger .is-k { margin-left: 0.85em; }
+.intro-type-stagger .is-d { margin-left: 1.7em; }
+.intro-type-lined {
+  margin-top: var(--sp-4);
+  font-size: clamp(2.2rem, 4.5vw, 3.2rem);
+  color: var(--ink-soft);
+}
+.intro-type-note {
+  margin-top: var(--sp-4);
+  font-size: 0.88rem;
+  line-height: 1.45;
+  color: var(--ink-soft);
+  max-width: 28ch;
+}
+.intro-type-cta {
+  margin-top: var(--sp-3);
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink);
+}
+.intro-type-card:hover .intro-type-cta { color: var(--accent); }
 
 /* ---------------- Scroll reveal ---------------- */
 .reveal {

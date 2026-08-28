@@ -7,14 +7,15 @@ intro:
   # reload = play on every homepage load; once = skip after first visit
   play_on: reload
   timings:
-    letters_in: 80          # ms: SKD enters
-    canvas_open: 1200       # ms: photo frame fills the viewport
-    photo_in: 2100          # ms: photo fades in (still zoomed in)
-    photo_zoom: 2800        # ms: zoom-out toward a device fit
-    shutter: 5600           # ms: shutters wipe the photo (SKD stays)
-    name_expand: 6600       # ms: SKD extends to Saikat K Das
-    name_out: 8600          # ms: name leaves, homepage shows
-    total: 10400            # ms: loading counter duration
+    letters_in: 80          # ms: staggered SKD enters in the right-half center
+    letters_dock: 1300      # ms: SKD travels left and lines up
+    canvas_open: 2300       # ms: photo frame fills the viewport
+    photo_in: 3100          # ms: photo fades in (still zoomed in)
+    photo_zoom: 3800        # ms: zoom-out toward a device fit
+    shutter: 6400           # ms: shutters wipe the photo (SKD stays)
+    name_expand: 7400       # ms: SKD extends to Saikat K Das
+    name_out: 9400          # ms: name leaves, homepage shows
+    total: 11200            # ms: loading counter duration
   photo_zoom_start: 1.72    # scale at fade-in (tight crop; zoom-out travels further)
   photo_zoom_end: 1.0       # scale after zoom-out
   # On short landscape viewports, zoom-out uses contain so the frame fits
@@ -25,6 +26,9 @@ fonts:
   body: "Helvetica Neue, Helvetica, IBM Plex Sans, Arial, sans-serif"
   mono: "IBM Plex Mono, ui-monospace, monospace"
   display_weight: 700
+  # Intro SKD only. Body/headings stay Helvetica.
+  # Options: oswald | barlow-condensed | alumni-sans | sofia-sans-condensed | big-shoulders-display
+  intro_choice: barlow-condensed
   # Loaded from Google as a Helvetica-like fallback (Apple already has Helvetica Neue)
   google: "IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500"
 

@@ -4,9 +4,11 @@ import path from 'node:path';
 import crypto from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import { loadSite } from './lib/content.js';
+import { INTRO_FONTS } from './lib/controls.js';
 import { generateResponsiveImages } from './lib/image.js';
 import { renderLayout } from './templates/partials.js';
 import { renderHome } from './templates/home.js';
+import { renderIntroType } from './templates/introType.js';
 import { renderCollectionsIndex } from './templates/collectionsIndex.js';
 import { renderCollectionDetail } from './templates/collectionDetail.js';
 import { renderThemesIndex, renderThemeDetail } from './templates/themes.js';
@@ -88,7 +90,7 @@ async function processIntroImages() {
   return result;
 }
 
-function page(templateContent, { title, description, activeKey, canonicalPath, data, bodyClass }) {
+function page(templateContent, { title, description, activeKey, canonicalPath, data, bodyClass, noIndex, extraGoogleFamilies }) {
   return renderLayout({
     title,
     description,
@@ -103,6 +105,8 @@ function page(templateContent, { title, description, activeKey, canonicalPath, d
     introCanvasSrc: pickRenderedSrc(data.introCanvas?.rendered),
     bodyClass,
     content: templateContent,
+    noIndex,
+    extraGoogleFamilies,
   });
 }
 
@@ -229,6 +233,20 @@ async function buildJournal(data) {
   }
 }
 
+async function buildIntroType(data) {
+  const extraGoogleFamilies = Object.values(INTRO_FONTS).map((f) => f.google);
+  const html = page(renderIntroType(data.controls), {
+    title: `Intro type — ${data.owner.name}`,
+    description: 'Gaunt type options for the SKD intro letters.',
+    activeKey: '',
+    canonicalPath: '/intro-type/',
+    data,
+    noIndex: true,
+    extraGoogleFamilies,
+  });
+  await writeFile('intro-type/index.html', html);
+}
+
 async function build404(data) {
   const html = page(
     `<section class="hero wrap"><h1 class="hero-heading">404</h1><p class="hero-sub">That frame doesn't exist. <a class="text-link" href="/">Back to the homepage</a>.</p></section>`,
@@ -325,6 +343,7 @@ async function main() {
   await buildAbout(data);
   await buildGear(data);
   await buildJournal(data);
+  await buildIntroType(data);
   await build404(data);
   await writeHostingFiles(data);
 

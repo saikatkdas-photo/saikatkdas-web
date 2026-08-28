@@ -153,7 +153,8 @@ Under `intro.timings`, every value is milliseconds from page load:
 
 | Key | What it does |
 |---|---|
-| `letters_in` | SKD letters enter |
+| `letters_in` | Staggered SKD enters in the middle of the right half |
+| `letters_dock` | SKD travels to the left edge and lines up |
 | `canvas_open` | Photo frame fills the viewport |
 | `photo_in` | Photo fades in, still zoomed in |
 | `photo_zoom` | Zoom-out toward a device fit |
@@ -176,6 +177,11 @@ and the rest). Light page surfaces and dark sections both live in this block.
 
 `fonts.display`, `fonts.body`, `fonts.mono` are CSS font stacks.
 `fonts.display_weight` is the heading weight (700 for Helvetica).
+`fonts.intro_choice` is the gaunt face used **only** on the intro SKD letters.
+Options: `oswald`, `barlow-condensed` (default), `alumni-sans`,
+`sofia-sans-condensed`, `big-shoulders-display`. Compare them at
+`/intro-type/` (not in the nav). Preview on the real intro with
+`/?introFont=oswald`.
 `fonts.google` is the Google Fonts family query used as a fallback; leave it
 empty to skip the webfont request.
 

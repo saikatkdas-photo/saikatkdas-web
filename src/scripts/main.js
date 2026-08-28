@@ -15,15 +15,30 @@
   } catch (err) {}
   var T = Object.assign({
     letters_in: 80,
-    canvas_open: 1200,
-    photo_in: 2100,
-    photo_zoom: 2800,
-    shutter: 5600,
-    name_expand: 6600,
-    name_out: 8600,
-    total: 10400
+    letters_dock: 1300,
+    canvas_open: 2300,
+    photo_in: 3100,
+    photo_zoom: 3800,
+    shutter: 6400,
+    name_expand: 7400,
+    name_out: 9400,
+    total: 11200
   }, introConfig.timings || {});
   var INTRO_TOTAL = T.total;
+
+  function applyIntroFont(cfg) {
+    var letters = document.querySelector('[data-intro-letters]');
+    if (!letters) return;
+    var key = cfg.introFont && cfg.introFont.key;
+    try {
+      var q = new URLSearchParams(window.location.search).get('introFont');
+      if (q) key = q;
+    } catch (err) {}
+    var spec = (cfg.introFonts && cfg.introFonts[key]) || cfg.introFont;
+    if (!spec) return;
+    letters.style.fontFamily = spec.family;
+    if (spec.weight) letters.style.fontWeight = spec.weight;
+  }
 
   function finishIntro() {
     if (!intro || introFinished) return;
@@ -77,6 +92,7 @@
 
     bindIntroViewport(intro);
     if (introConfig.photoFitLandscape === 'cover') intro.classList.add('intro-fit-cover');
+    applyIntroFont(introConfig);
 
     var start = performance.now();
     function tick(now) {
@@ -87,6 +103,7 @@
     requestAnimationFrame(tick);
 
     window.setTimeout(function () { intro.classList.add('intro-p1'); }, T.letters_in);
+    window.setTimeout(function () { intro.classList.add('intro-dock'); }, T.letters_dock);
     window.setTimeout(function () { intro.classList.add('intro-p2'); }, T.canvas_open);
     window.setTimeout(function () { intro.classList.add('intro-p3'); }, T.photo_in);
     window.setTimeout(function () { intro.classList.add('intro-p4'); }, T.photo_zoom);

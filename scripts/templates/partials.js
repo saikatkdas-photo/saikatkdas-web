@@ -1,4 +1,4 @@
-import { controlsToCss, introRuntimeConfig } from '../lib/controls.js';
+import { controlsToCss, introRuntimeConfig, googleFontsHref, INTRO_FONTS } from '../lib/controls.js';
 
 export function escapeHtml(value) {
   return String(value ?? '')
@@ -149,14 +149,16 @@ function renderHomeIntro(owner, introCanvasSrc, introConfig) {
   </div>`;
 }
 
-export function renderLayout({ title, description, activeKey, site, owner, nav, flags, controls, bodyClass = '', content, canonicalPath = '/', assetVersion = '', introCanvasSrc = '' }) {
+export function renderLayout({ title, description, activeKey, site, owner, nav, flags, controls, bodyClass = '', content, canonicalPath = '/', assetVersion = '', introCanvasSrc = '', noIndex = false, extraGoogleFamilies = [] }) {
   const isHome = activeKey === 'home';
   const showIntro = Boolean(isHome && flags?.hasIntro);
   const v = assetVersion ? `?v=${assetVersion}` : '';
   const tokenCss = controls ? controlsToCss(controls) : '';
-  const google = controls?.fonts?.google
-    ? `<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=${controls.fonts.google}&display=swap">`
-    : '';
+  const googleFamilies = extraGoogleFamilies.length
+    ? extraGoogleFamilies
+    : (showIntro ? Object.values(INTRO_FONTS).map((f) => f.google) : []);
+  const googleHref = controls ? googleFontsHref(controls, googleFamilies) : '';
+  const google = googleHref ? `<link rel="stylesheet" href="${googleHref}">` : '';
   const introConfig = controls ? introRuntimeConfig(controls) : {};
   return `<!DOCTYPE html>
 <html lang="${site.language || 'en'}">
@@ -165,6 +167,7 @@ export function renderLayout({ title, description, activeKey, site, owner, nav, 
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>${escapeHtml(title)}</title>
   <meta name="description" content="${escapeHtml(description)}">
+  ${noIndex ? '<meta name="robots" content="noindex">' : ''}
   <link rel="canonical" href="${site.url}${canonicalPath}">
   <meta property="og:type" content="website">
   <meta property="og:title" content="${escapeHtml(title)}">

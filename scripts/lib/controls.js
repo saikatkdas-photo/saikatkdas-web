@@ -8,13 +8,14 @@ export const CONTROL_DEFAULTS = {
     play_on: 'reload',
     timings: {
       letters_in: 80,
-      canvas_open: 1200,
-      photo_in: 2100,
-      photo_zoom: 2800,
-      shutter: 5600,
-      name_expand: 6600,
-      name_out: 8600,
-      total: 10400,
+      letters_dock: 1300,
+      canvas_open: 2300,
+      photo_in: 3100,
+      photo_zoom: 3800,
+      shutter: 6400,
+      name_expand: 7400,
+      name_out: 9400,
+      total: 11200,
     },
     photo_zoom_start: 1.72,
     photo_zoom_end: 1,
@@ -26,6 +27,7 @@ export const CONTROL_DEFAULTS = {
     mono: 'IBM Plex Mono, ui-monospace, monospace',
     display_weight: 700,
     google: 'IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500',
+    intro_choice: 'barlow-condensed',
   },
   colors: {
     bg: '#ECEAE4',
@@ -100,7 +102,63 @@ export async function loadControls(rootDir) {
   }
 }
 
-function quoteFontStack(stack) {
+export const INTRO_FONTS = {
+  oswald: {
+    name: 'Oswald',
+    note: 'Condensed gothic. Narrow, slightly industrial, very gaunt at display size.',
+    stack: 'Oswald, Helvetica Neue, sans-serif',
+    google: 'Oswald:wght@500;600;700',
+    weight: 500,
+  },
+  'barlow-condensed': {
+    name: 'Barlow Condensed',
+    note: 'Helvetica’s lean cousin. Clean grotesk, condensed without going poster.',
+    stack: 'Barlow Condensed, Helvetica Neue, sans-serif',
+    google: 'Barlow+Condensed:wght@500;600;700',
+    weight: 600,
+  },
+  'alumni-sans': {
+    name: 'Alumni Sans',
+    note: 'Taller than it is wide. Soft grotesk with a starved, editorial silhouette.',
+    stack: 'Alumni Sans, Helvetica Neue, sans-serif',
+    google: 'Alumni+Sans:wght@500;600;700',
+    weight: 600,
+  },
+  'sofia-sans-condensed': {
+    name: 'Sofia Sans Condensed',
+    note: 'Neo-grotesk condensed. Neutral, straight, a bit more gaunt than Helvetica.',
+    stack: 'Sofia Sans Condensed, Helvetica Neue, sans-serif',
+    google: 'Sofia+Sans+Condensed:wght@500;600;700',
+    weight: 600,
+  },
+  'big-shoulders-display': {
+    name: 'Big Shoulders Display',
+    note: 'Fashion-tall. The gauntest of the five — extra condensed, high-contrast stems.',
+    stack: 'Big Shoulders Display, Helvetica Neue, sans-serif',
+    google: 'Big+Shoulders+Display:wght@500;600;700',
+    weight: 600,
+  },
+};
+
+export function resolveIntroFont(controls) {
+  const key = controls?.fonts?.intro_choice || 'barlow-condensed';
+  return { key, ...(INTRO_FONTS[key] || INTRO_FONTS['barlow-condensed']) };
+}
+
+export function googleFontsHref(controls, extraFamilies = []) {
+  const parts = [];
+  if (controls?.fonts?.google) parts.push(controls.fonts.google);
+  for (const fam of extraFamilies) {
+    const id = String(fam).split(':')[0];
+    if (fam && !parts.some((part) => part.includes(id))) parts.push(fam);
+  }
+  if (!parts.length) return '';
+  const [first, ...rest] = parts;
+  const query = rest.length ? `${first}&family=${rest.join('&family=')}` : first;
+  return `https://fonts.googleapis.com/css2?family=${query}&display=swap`;
+}
+
+export function quoteFontStack(stack) {
   return String(stack)
     .split(',')
     .map((part) => {
@@ -119,6 +177,7 @@ export function controlsToCss(controls) {
   const f = controls.fonts;
   const intro = controls.intro;
   const layout = controls.layout;
+  const introFont = resolveIntroFont(controls);
   return `:root {
   --bg: ${c.bg};
   --bg-raised: ${c.bg_raised};
@@ -138,6 +197,8 @@ export function controlsToCss(controls) {
   --font-body: ${quoteFontStack(f.body)};
   --font-mono: ${quoteFontStack(f.mono)};
   --font-display-weight: ${Number(f.display_weight) || 700};
+  --font-intro: ${quoteFontStack(introFont.stack)};
+  --font-intro-weight: ${Number(introFont.weight) || 600};
   --intro-zoom-start: ${intro.photo_zoom_start};
   --intro-zoom-end: ${intro.photo_zoom_end};
   --highlight-track-min-h: ${layout.highlight_track_min_height};
@@ -146,11 +207,16 @@ export function controlsToCss(controls) {
 }
 
 export function introRuntimeConfig(controls) {
+  const introFont = resolveIntroFont(controls);
   return {
     enabled: controls.intro.enabled && controls.sections.intro !== false,
     playOn: controls.intro.play_on,
     timings: controls.intro.timings,
     honorReduced: controls.motion.honor_reduced !== false,
     photoFitLandscape: controls.intro.photo_fit_landscape,
+    introFont: { key: introFont.key, family: quoteFontStack(introFont.stack), weight: introFont.weight },
+    introFonts: Object.fromEntries(
+      Object.entries(INTRO_FONTS).map(([key, spec]) => [key, { family: quoteFontStack(spec.stack), weight: spec.weight }])
+    ),
   };
 }
