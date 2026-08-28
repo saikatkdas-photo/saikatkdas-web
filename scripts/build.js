@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import crypto from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import { loadSite } from './lib/content.js';
 import { generateResponsiveImages } from './lib/image.js';
@@ -59,6 +60,13 @@ async function processAllImages(data) {
   return processed;
 }
 
+function firstHighlightSrc(data) {
+  const h = data.highlights?.[0]?.image?.rendered;
+  if (!h) return '';
+  const largest = h.outputs[h.outputs.length - 1];
+  return `${h.publicDir}/${largest.jpg}`;
+}
+
 function page(templateContent, { title, description, activeKey, canonicalPath, data, bodyClass }) {
   return renderLayout({
     title,
@@ -69,9 +77,20 @@ function page(templateContent, { title, description, activeKey, canonicalPath, d
     owner: data.owner,
     nav: data.nav,
     flags: data.flags,
+    assetVersion: data.assetVersion,
+    introImageSrc: firstHighlightSrc(data),
     bodyClass,
     content: templateContent,
   });
+}
+
+async function computeAssetVersion() {
+  const files = ['src/styles/main.css', 'src/scripts/main.js'];
+  const hash = crypto.createHash('sha1');
+  for (const rel of files) {
+    hash.update(await fs.readFile(path.join(ROOT, rel)));
+  }
+  return hash.digest('hex').slice(0, 8);
 }
 
 async function buildHome(data) {
@@ -253,6 +272,9 @@ async function main() {
   console.log('→ Processing images…');
   const count = await processAllImages(data);
   console.log(`  processed ${count} image(s)`);
+
+  data.assetVersion = await computeAssetVersion();
+  console.log(`→ Asset version ${data.assetVersion}`);
 
   console.log('→ Copying static assets…');
   await copyStaticAssets();

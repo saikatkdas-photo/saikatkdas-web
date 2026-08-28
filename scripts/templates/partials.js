@@ -114,7 +114,41 @@ export function renderLightboxMarkup() {
   </div>`;
 }
 
-export function renderLayout({ title, description, activeKey, site, owner, nav, flags, bodyClass = '', content, canonicalPath = '/' }) {
+function renderHomeIntro(owner, introImageSrc) {
+  const rows = [
+    { key: 'S', dir: 'up' },
+    { key: 'K', dir: 'right' },
+    { key: 'D', dir: 'down' },
+  ];
+  const letters = rows
+    .map(
+      (r) =>
+        `<span class="intro-letter" data-letter="${r.key}" data-from="${r.dir}"><span class="intro-glyph">${r.key}</span></span>`
+    )
+    .join('');
+  const fullName = owner.name;
+  return `<div class="intro" data-intro aria-hidden="true">
+    <div class="intro-stage" data-intro-stage>
+      <div class="intro-mark" data-intro-mark>${letters}<span class="intro-star" data-intro-star>(*)</span></div>
+      <div class="intro-frame" data-intro-frame>
+        <div class="intro-frame-inner" data-intro-frame-inner>${introImageSrc ? `<img src="${introImageSrc}" alt="" class="intro-photo" fetchpriority="high">` : ''}</div>
+        <div class="intro-shutter intro-shutter-top" data-intro-shutter-top></div>
+        <div class="intro-shutter intro-shutter-bot" data-intro-shutter-bot></div>
+      </div>
+      <div class="intro-name" data-intro-name aria-label="${escapeHtml(fullName)}">
+        ${fullName
+          .split('')
+          .map((c, i) => `<span class="intro-name-char" style="--i:${i}">${c === ' ' ? '&nbsp;' : escapeHtml(c)}</span>`)
+          .join('')}
+      </div>
+    </div>
+    <div class="intro-foot"><span>Loading</span><span data-intro-count>000</span></div>
+  </div>`;
+}
+
+export function renderLayout({ title, description, activeKey, site, owner, nav, flags, bodyClass = '', content, canonicalPath = '/', assetVersion = '', introImageSrc = '' }) {
+  const isHome = activeKey === 'home';
+  const v = assetVersion ? `?v=${assetVersion}` : '';
   return `<!DOCTYPE html>
 <html lang="${site.language || 'en'}">
 <head>
@@ -131,18 +165,10 @@ export function renderLayout({ title, description, activeKey, site, owner, nav, 
   <link rel="icon" type="image/svg+xml" href="/assets/favicon.svg">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="stylesheet" href="/styles/main.css">
+  <link rel="stylesheet" href="/styles/main.css${v}">
 </head>
-<body class="${bodyClass} is-loading">
-  <div class="page-loader" data-page-loader aria-hidden="true">
-    <div class="page-loader-inner">
-      <div class="pl-row pl-row-1"><span class="pl-word" data-pl-word="Saikat">${'Saikat'.split('').map((c) => `<span class="pl-char">${c}</span>`).join('')}</span></div>
-      <div class="pl-row pl-row-2"><span class="pl-word" data-pl-word="K">${'K'.split('').map((c) => `<span class="pl-char">${c}</span>`).join('')}</span></div>
-      <div class="pl-row pl-row-3"><span class="pl-word" data-pl-word="Das">${'Das'.split('').map((c) => `<span class="pl-char">${c}</span>`).join('')}</span></div>
-      <div class="pl-row pl-row-4"><span class="pl-star">(*)</span></div>
-    </div>
-    <div class="page-loader-foot"><span>Loading</span><span class="pl-count" data-pl-count>0</span></div>
-  </div>
+<body class="${bodyClass}${isHome ? ' has-intro' : ''}">
+  ${isHome ? renderHomeIntro(owner, introImageSrc) : ''}
   <a class="skip-link" href="#main">Skip to content</a>
   ${renderHeader({ owner, nav, flags, activeKey })}
   <main id="main">
@@ -150,7 +176,7 @@ export function renderLayout({ title, description, activeKey, site, owner, nav, 
   </main>
   ${renderFooter({ owner })}
   ${renderLightboxMarkup()}
-  <script src="/scripts/main.js" defer></script>
+  <script src="/scripts/main.js${v}" defer></script>
 </body>
 </html>`;
 }

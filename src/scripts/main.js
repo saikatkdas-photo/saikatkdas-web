@@ -3,55 +3,74 @@
 
   var reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-  /* ---------------- Page loader / welcome animation ---------------- */
-  var loader = document.querySelector('[data-page-loader]');
-  var loaderCount = document.querySelector('[data-pl-count]');
+  /* ---------------- Welcome intro (homepage, cold load) ---------------- */
+  var intro = document.querySelector('[data-intro]');
+  var introCount = document.querySelector('[data-intro-count]');
+  var SEEN_KEY = 'skd_intro_seen_v1';
 
-  function runLoader() {
-    if (!loader) {
-      document.body.classList.remove('is-loading');
-      document.body.classList.add('is-loaded');
-      return;
-    }
-
-    if (reducedMotion) {
-      loader.classList.add('is-hidden');
-      document.body.classList.remove('is-loading');
-      document.body.classList.add('is-loaded');
-      window.setTimeout(function () { loader.remove(); }, 400);
-      return;
-    }
-
-    // Animate a counter 0 → 100 over ~1.6s
-    var start = performance.now();
-    var duration = 1600;
-    function tick(now) {
-      var t = Math.min(1, (now - start) / duration);
-      var v = Math.floor(t * 100);
-      if (loaderCount) loaderCount.textContent = String(v).padStart(3, '0');
-      if (t < 1) requestAnimationFrame(tick); else finish();
-    }
-    function finish() {
-      loader.classList.add('is-hidden');
-      document.body.classList.remove('is-loading');
-      document.body.classList.add('is-loaded');
-      window.setTimeout(function () { if (loader && loader.parentNode) loader.parentNode.removeChild(loader); }, 900);
-    }
-    requestAnimationFrame(tick);
+  function finishIntro() {
+    if (!intro) return;
+    document.body.classList.remove('has-intro');
+    document.body.classList.add('intro-done');
+    intro.classList.add('is-gone');
+    try { sessionStorage.setItem(SEEN_KEY, '1'); } catch (e) {}
+    window.setTimeout(function () { if (intro && intro.parentNode) intro.parentNode.removeChild(intro); }, 1100);
   }
 
-  // Kick off loader on load event so images/fonts are (mostly) ready
-  if (document.readyState === 'complete') {
-    runLoader();
+  function skipIntro() {
+    if (!intro) return;
+    document.body.classList.remove('has-intro');
+    document.body.classList.add('intro-done');
+    intro.parentNode && intro.parentNode.removeChild(intro);
+  }
+
+  function runIntro() {
+    if (!intro) return;
+    var seen = false;
+    try { seen = sessionStorage.getItem(SEEN_KEY) === '1'; } catch (e) {}
+    if (seen || reducedMotion) { skipIntro(); return; }
+
+    // Rolling counter 000 → 100 over the sequence
+    var start = performance.now();
+    var TOTAL = 4600; // total intro duration
+    function tick(now) {
+      var t = Math.min(1, (now - start) / TOTAL);
+      if (introCount) introCount.textContent = String(Math.floor(t * 100)).padStart(3, '0');
+      if (t < 1) requestAnimationFrame(tick);
+    }
+    requestAnimationFrame(tick);
+
+    // Phase timeline
+    // p1: 0.1s   — letters converge, (*) rises
+    // p2: 1.2s   — SKD slide left, (*) → top-right, photo frame opens
+    // p3: 2.3s   — shutters close from top/bottom to middle line
+    // p4: 3.0s   — shutters open outward, bg flips to light, name rises
+    // p5: 4.2s   — overlay slides up and out
+    window.setTimeout(function () { intro.classList.add('intro-p1'); }, 100);
+    window.setTimeout(function () { intro.classList.add('intro-p2'); }, 1200);
+    window.setTimeout(function () { intro.classList.add('intro-p3'); }, 2300);
+    window.setTimeout(function () { intro.classList.add('intro-p4', 'is-light'); }, 3000);
+    window.setTimeout(function () { intro.classList.add('intro-p5'); }, 4200);
+    window.setTimeout(finishIntro, TOTAL);
+
+    // Escape to skip
+    document.addEventListener('keydown', function esc(e) {
+      if (e.key === 'Escape') { finishIntro(); document.removeEventListener('keydown', esc); }
+    });
+  }
+
+  if (intro) {
+    if (document.readyState === 'complete') runIntro();
+    else window.addEventListener('load', runIntro);
+    // Safety timeout
+    window.setTimeout(function () { if (intro && intro.parentNode) runIntro(); }, 5000);
   } else {
-    window.addEventListener('load', runLoader);
-    // Safety: never keep the loader forever
-    window.setTimeout(runLoader, 3500);
+    document.body.classList.add('intro-done');
   }
 
   /* ---------------- Scroll reveal ---------------- */
   var revealTargets = document.querySelectorAll(
-    '.highlight-item, .card, .gallery-item, .journal-item, .gear-item, .section-head, .hero-heading, .hero-sub, .hero-count, .detail-title, .detail-cover, .about-copy, .about-facts, .fact'
+    '.card, .gallery-item, .journal-item, .gear-item, .section-head, .hero-heading, .hero-sub, .hero-count, .detail-title, .detail-cover, .about-copy, .about-facts, .fact'
   );
   revealTargets.forEach(function (el) { el.classList.add('reveal'); });
 

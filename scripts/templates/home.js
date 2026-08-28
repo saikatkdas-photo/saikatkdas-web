@@ -5,7 +5,7 @@ function renderHighlightItem(highlight, index) {
   const subLabel = (image.tags || []).filter((t) => t !== title.toLowerCase())
     .map((t) => t[0].toUpperCase() + t.slice(1))
     .join(' · ');
-  return `<a class="highlight-item" href="${href}">
+  return `<a class="highlight-item" href="${href}" style="--hi-i:${index}">
     <div class="frame">
       ${renderPicture(image, { sizes: '(min-width: 800px) 50vw, 92vw', loading: index === 0 ? 'eager' : 'lazy', fetchpriority: index === 0 ? 'high' : undefined })}
     </div>
