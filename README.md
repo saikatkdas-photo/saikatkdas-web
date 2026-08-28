@@ -145,18 +145,99 @@ IBM Plex Sans (body), IBM Plex Mono (labels/EXIF chips).
 `.github/workflows/deploy.yml` builds the site with Node 22 and deploys
 `dist/` to GitHub Pages on every push to `main`.
 
-**One-time setup, once you're ready to point `saikatkdas.com` at this repo:**
+Two separate things have to happen before `saikatkdas.com` goes live: (A) tell
+**GitHub** to serve this repo on that domain, and (B) tell **your domain
+registrar** (wherever you bought `saikatkdas.com`) to point at GitHub. Do them
+in this order — A first, then B — and finish with a DNS check before flipping
+on HTTPS.
 
-1. In the repo settings → **Pages**, set the source to **GitHub Actions**.
-2. Add your domain in the same settings screen ("Custom domain" → `saikatkdas.com`).
-   This repo's build already writes a `CNAME` file into `dist/` automatically,
-   but setting it in the GitHub UI too keeps it from being wiped on the next
-   settings change.
-3. At your domain registrar, point DNS at GitHub Pages:
-   - Apex domain (`saikatkdas.com`): four `A` records to
-     `185.199.108.153`, `185.199.109.153`, `185.199.110.153`, `185.199.111.153`
-   - `www` subdomain (optional): a `CNAME` record to `<username>.github.io`
-4. Once DNS propagates, enable **Enforce HTTPS** in the Pages settings.
+### A. GitHub side (do this first)
+
+1. Push this repo to GitHub and make sure the **Deploy** Actions workflow has
+   run at least once successfully (Actions tab → green checkmark). This
+   publishes an initial site to `<username>.github.io/<repo>` and turns Pages on.
+2. In the repo on GitHub: **Settings** → **Pages** (left sidebar, under "Code and automation").
+3. Under **Build and deployment → Source**, confirm it's set to **GitHub Actions** (it already is, via `deploy.yml`).
+4. Scroll to **Custom domain**, type `saikatkdas.com`, and click **Save**.
+   - GitHub will show a message that it can't verify the domain yet — that's
+     expected, because you haven't added the DNS records. Leave this tab open
+     or come back to it after step B.
+   - This also commits a `CNAME` file to your repo automatically (this repo's
+     build script writes one too, so it survives future deploys either way).
+5. Leave **Enforce HTTPS** unchecked for now — it's greyed out until DNS is live. You'll come back for step D.
+
+### B. Registrar side (wherever `saikatkdas.com` is registered)
+
+Log in to your registrar (e.g. GoDaddy, Namecheap, Google Domains, Cloudflare,
+Porkbun...) and find its **DNS management** / **DNS records** page for
+`saikatkdas.com` (sometimes called "DNS Zone Editor" or "Manage DNS"). Add the
+following records. Exact field names differ slightly per registrar, but every
+record needs: a **type**, a **host/name**, and a **value/points to**.
+
+**Required — apex domain (`saikatkdas.com`, no `www`):** add four separate `A` records, all with the host set to `@` (or left blank, which usually means the same thing — the bare domain):
+
+| Type | Host / Name | Value / Points to |
+|---|---|---|
+| A | @ | `185.199.108.153` |
+| A | @ | `185.199.109.153` |
+| A | @ | `185.199.110.153` |
+| A | @ | `185.199.111.153` |
+
+**Recommended — IPv6 support:** four `AAAA` records, also on host `@`:
+
+| Type | Host / Name | Value / Points to |
+|---|---|---|
+| AAAA | @ | `2606:50c0:8000::153` |
+| AAAA | @ | `2606:50c0:8001::153` |
+| AAAA | @ | `2606:50c0:8002::153` |
+| AAAA | @ | `2606:50c0:8003::153` |
+
+**Optional — make `www.saikatkdas.com` work too** (it will automatically
+redirect to the apex once GitHub verifies the domain): one `CNAME` record —
+
+| Type | Host / Name | Value / Points to |
+|---|---|---|
+| CNAME | www | `<username>.github.io` |
+
+Notes:
+- If your registrar won't let you add an `A` record on the bare apex alongside other records, that's normal — just make sure you don't also have a leftover "parking page" `A` record or `CNAME` on `@` from the registrar; delete those first.
+- Some registrars (Cloudflare, DNSimple, etc.) offer an `ALIAS`/`ANAME`/"CNAME flattening" record instead — if so, you can use one of those pointed at `<username>.github.io` instead of the four `A` records. Either approach works; don't do both.
+- Don't add wildcard records (`*.saikatkdas.com`) — GitHub explicitly warns against it (domain takeover risk).
+- Delete any pre-existing `A`/`CNAME` records on `@` or `www` left over from a registrar parking page or previous host — GitHub Pages requires exactly its own records, no others alongside them.
+
+### C. Wait for DNS to propagate, then verify
+
+DNS changes usually take anywhere from a few minutes to a few hours (rarely, up to 24-48h). Check from your own terminal:
+
+```bash
+dig +short saikatkdas.com A
+# should eventually print the four 185.199.10x.153 addresses
+
+dig +short www.saikatkdas.com CNAME
+# should print <username>.github.io.
+```
+
+If `dig` still shows your old host's IP, or nothing at all, DNS hasn't
+propagated yet — wait and retry. You can also check propagation globally at
+[dnschecker.org](https://dnschecker.org) (search `saikatkdas.com`, type `A`).
+
+Once `dig` shows the GitHub IPs, go back to **Settings → Pages** in the repo —
+the custom domain field should now show a green checkmark instead of the
+"unable to verify" warning. If it still shows an error after DNS looks
+correct, remove the domain from the field, save, wait a minute, then re-enter
+it and save again to force GitHub to re-check.
+
+### D. Turn on HTTPS
+
+Back in **Settings → Pages**, once the domain shows verified, tick
+**Enforce HTTPS**. GitHub provisions a Let's Encrypt certificate for you —
+this can take a few minutes up to an hour after DNS first verifies. Until it's
+checked, visiting `https://saikatkdas.com` may show a certificate warning;
+that resolves itself once the checkbox is available and enabled.
+
+After that, `saikatkdas.com` (and `www.saikatkdas.com`, if you added the
+`CNAME`) both serve the site over HTTPS, and every push to `main` redeploys
+automatically via `deploy.yml`.
 
 ## Local preview
 
