@@ -201,12 +201,13 @@ async function buildUntitled(data) {
 
 async function buildTimeline(data) {
   if (!data.flags.hasTimeline) return;
-  const html = page(renderTimeline(data.timelineYears), {
+  const html = page(renderTimeline(data.timelineSequence), {
     title: `Timeline — ${data.owner.name}`,
-    description: 'The work, year by year.',
+    description: 'The work, newest first.',
     activeKey: 'timeline',
     canonicalPath: '/timeline/',
     data,
+    bodyClass: 'is-timeline',
   });
   await writeFile('timeline/index.html', html);
 }

@@ -123,7 +123,7 @@ export function pickCover(images, opts = {}) {
   return { cover, warning, reused: false };
 }
 
-export function assignSiteCovers({ projects = [], series = [], untitled = null, themes = [], timelineYears = [], journal = [] }) {
+export function assignSiteCovers({ projects = [], series = [], untitled = null, themes = [], journal = [] }) {
   const warnings = [];
   const used = new Set();
   const log = [];
@@ -156,23 +156,6 @@ export function assignSiteCovers({ projects = [], series = [], untitled = null, 
     }
   }
 
-  for (const year of timelineYears) {
-    const { cover, reused } = pickCover(year.images, {
-      usedKeys: used,
-      allowRandomFallback: true,
-      seed: `year-${year.year}`,
-      warnLabel: `timeline:${year.year}`,
-    });
-    year.hero = cover;
-    year.rest = cover
-      ? year.images.filter((img) => imageKey(img) !== imageKey(cover))
-      : year.images;
-    if (cover) {
-      used.add(imageKey(cover));
-      log.push(`timeline:${year.label} → ${cover.file}${reused ? ' (reuse)' : ''}`);
-    }
-  }
-
   for (const theme of themes) {
     const images = theme.items.map((item) => item.image).filter(Boolean);
     const { cover, reused } = pickCover(images, {
@@ -196,13 +179,32 @@ export function assignSiteCovers({ projects = [], series = [], untitled = null, 
   return { warnings, log, used };
 }
 
+const MONTH_SHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+export function imageTakenParts(image) {
+  const raw = String(image?.takenAt || '').trim();
+  const match = raw.match(/^(\d{4})-(\d{2})/);
+  if (match) {
+    const monthIndex = Number(match[2]) - 1;
+    return {
+      year: match[1],
+      month: MONTH_SHORT[monthIndex] || '',
+      key: match[1],
+    };
+  }
+  const yearOnly = raw.slice(0, 4);
+  if (/^\d{4}$/.test(yearOnly)) {
+    return { year: yearOnly, month: '', key: yearOnly };
+  }
+  return { year: '', month: '', key: 'undated' };
+}
+
 export function buildTimelineYears(images) {
   const groups = new Map();
   for (const image of images) {
-    const raw = String(image.takenAt || '').slice(0, 4);
-    const year = /^\d{4}$/.test(raw) ? raw : 'undated';
-    if (!groups.has(year)) groups.set(year, []);
-    groups.get(year).push(image);
+    const key = imageTakenParts(image).key;
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key).push(image);
   }
 
   const years = [...groups.entries()].map(([year, yearImages]) => ({
@@ -220,4 +222,34 @@ export function buildTimelineYears(images) {
   });
 
   return years;
+}
+
+/** Flat newest-first sequence with year markers between year changes. */
+export function buildTimelineSequence(images) {
+  const sorted = [...(images || [])].sort(compareLatest);
+  const items = [];
+  let lastKey = null;
+
+  for (const image of sorted) {
+    const parts = imageTakenParts(image);
+    if (lastKey !== null && parts.key !== lastKey) {
+      items.push({
+        type: 'year',
+        year: parts.year,
+        label: parts.key === 'undated' ? 'Undated' : parts.year,
+      });
+    }
+    lastKey = parts.key;
+
+    items.push({
+      type: 'image',
+      image,
+      year: parts.year,
+      month: parts.month,
+      series: image.sheet?.title || '',
+      highlight: Boolean(image.highlight),
+    });
+  }
+
+  return items;
 }

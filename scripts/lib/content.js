@@ -4,7 +4,7 @@ import matter from 'gray-matter';
 import { renderMarkdown } from './markdown.js';
 import { slugify, titleFromSlug } from './slug.js';
 import { loadControls } from './controls.js';
-import { assignSiteCovers, buildTimelineYears, compareLatest, pickPreviewImages } from './covers.js';
+import { assignSiteCovers, buildTimelineYears, buildTimelineSequence, compareLatest, pickPreviewImages } from './covers.js';
 import { isSourceImageFile } from './image.js';
 
 function naturalCompare(a, b) {
@@ -259,6 +259,7 @@ function buildThemes(allCollections) {
 function collectionKind(collection) {
   if (collection?.type === 'project') return 'Project';
   if (collection?.type === 'untitled') return 'Untitled';
+  if (collection?.type === 'journal') return 'Journal';
   return 'Series';
 }
 
@@ -318,18 +319,23 @@ export async function loadSite(rootDir) {
 
   const allGalleryCollections = [...projects, ...series, untitled].filter((c) => c.images?.length);
   attachSheetMeta(allGalleryCollections);
+  attachSheetMeta(journal.filter((post) => post.images?.length));
   const themes = buildThemes(allGalleryCollections);
   const highlights = collectHighlights(allGalleryCollections);
 
   const allGalleryImages = allGalleryCollections.flatMap((c) => c.images);
-  const timelineYears = buildTimelineYears(allGalleryImages);
+  const timelineImages = [
+    ...allGalleryImages,
+    ...journal.flatMap((post) => post.images || []),
+  ];
+  const timelineYears = buildTimelineYears(timelineImages);
+  const timelineSequence = buildTimelineSequence(timelineImages);
 
   const { warnings, log } = assignSiteCovers({
     projects,
     series,
     untitled,
     themes,
-    timelineYears,
     journal,
   });
 
@@ -350,13 +356,14 @@ export async function loadSite(rootDir) {
     themes,
     highlights,
     timelineYears,
+    timelineSequence,
     coverWarnings: warnings,
     coverLog: log,
     flags: {
       hasProjects: projects.length > 0 && sectionOn('projects'),
       hasSeries: series.length > 0 && sectionOn('series'),
       hasUntitled: untitled.images.length > 0 && sectionOn('untitled'),
-      hasTimeline: allGalleryImages.length > 0 && sectionOn('timeline'),
+      hasTimeline: timelineImages.length > 0 && sectionOn('timeline'),
       hasThemes: themes.length > 0 && sectionOn('themes'),
       hasGear: gear.length > 0 && sectionOn('gear'),
       hasJournal: journal.length > 0 && sectionOn('journal'),
