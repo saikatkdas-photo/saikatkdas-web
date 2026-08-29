@@ -42,13 +42,31 @@ async function pathExists(p) {
   try { await fs.access(p); return true; } catch { return false; }
 }
 
-async function sameDirectory(a, b) {
+/** On-disk folder name (macOS APFS is case-insensitive; git paths are not). */
+async function existingDirPath(absPath) {
+  const resolved = path.resolve(absPath);
+  const parent = path.dirname(resolved);
+  const base = path.basename(resolved);
+  if (!(await pathExists(parent))) return resolved;
+  const entries = await fs.readdir(parent);
+  const match = entries.find((e) => e.toLowerCase() === base.toLowerCase());
+  return match ? path.join(parent, match) : resolved;
+}
+
+async function sameFile(a, b) {
   try {
     const [sa, sb] = await Promise.all([fs.stat(a), fs.stat(b)]);
     return sa.dev === sb.dev && sa.ino === sb.ino;
   } catch {
-    return path.resolve(a) === path.resolve(b);
+    return false;
   }
+}
+
+async function sameDirectory(a, b) {
+  if (await pathExists(a) && await pathExists(b)) {
+    return sameFile(a, b);
+  }
+  return path.resolve(a).toLowerCase() === path.resolve(b).toLowerCase();
 }
 
 function rel(p) {
@@ -217,7 +235,7 @@ function fileMoves(group, destDir, destBase) {
 
 async function transfer(from, to, move) {
   await fs.mkdir(path.dirname(to), { recursive: true });
-  if (path.resolve(from) === path.resolve(to)) return;
+  if (await sameFile(from, to)) return;
   if (move) {
     try {
       await fs.rename(from, to);
@@ -257,12 +275,13 @@ async function removeEmptyDir(dir) {
 }
 
 async function mergeFolders(values, sourceArgs) {
-  const destDir = resolveDest(values.dest, values.slug);
+  let destDir = resolveDest(values.dest, values.slug);
   assertInsideRepo(destDir, 'Destination');
+  if (await pathExists(destDir)) destDir = await existingDirPath(destDir);
 
   const sourceDirs = [];
   for (const raw of sourceArgs) {
-    const abs = path.resolve(ROOT, raw);
+    const abs = await existingDirPath(path.resolve(ROOT, raw));
     if (!(await pathExists(abs))) {
       console.error(`✗ Source directory not found: ${abs}`);
       process.exit(1);
@@ -321,7 +340,8 @@ async function mergeFolders(values, sourceArgs) {
     return true;
   }
 
-  const keepDestAsIs = destExists && !values.repack;
+  const inPlaceRepack = values.repack && incomingGroups.length === 0;
+  const keepDestAsIs = destExists && !inPlaceRepack;
   if (keepDestAsIs) {
     for (const group of destGroups) {
       reserved.add(`${group.base}${group.ext}`.toLowerCase());
@@ -329,12 +349,16 @@ async function mergeFolders(values, sourceArgs) {
     }
   }
 
-  const toAssign = values.repack ? [...destGroups, ...incomingGroups] : incomingGroups;
-  toAssign.sort((a, b) => {
-    const dirCmp = naturalCompare(rel(a.dir), rel(b.dir));
-    if (dirCmp !== 0) return dirCmp;
-    return naturalCompare(a.image, b.image);
-  });
+  // Dest frames always keep their names unless this is an in-place --repack.
+  // Incoming is appended after dest. Never sort a source ahead of dest and
+  // write it onto dest/01.jpg — that is what clobbered folders on APFS.
+  const toAssign = inPlaceRepack
+    ? [...destGroups].sort((a, b) => naturalCompare(a.image, b.image))
+    : incomingGroups.sort((a, b) => {
+      const dirCmp = naturalCompare(rel(a.dir), rel(b.dir));
+      if (dirCmp !== 0) return dirCmp;
+      return naturalCompare(a.image, b.image);
+    });
 
   for (const group of toAssign) {
     let destBase;
@@ -363,7 +387,7 @@ async function mergeFolders(values, sourceArgs) {
   for (const job of jobs) {
     const moves = fileMoves(job.group, destDir, job.destBase);
     const imageMove = moves[0];
-    const unchanged = path.resolve(imageMove.from) === path.resolve(imageMove.to);
+    const unchanged = await sameFile(imageMove.from, imageMove.to);
     rows.push({
       from: `${rel(job.group.dir)}/${job.group.image}`,
       to: `${rel(destDir)}/${job.destBase}${job.group.ext}`,
@@ -404,23 +428,25 @@ async function mergeFolders(values, sourceArgs) {
 
   await fs.mkdir(destDir, { recursive: true });
 
-  const needsStaging = allMoves.some((m) => path.dirname(m.from) === destDir);
-  if (needsStaging) {
-    const stamp = `${Date.now()}`;
-    for (const [index, move] of allMoves.entries()) {
-      if (path.dirname(move.from) !== destDir) continue;
-      const staged = path.join(destDir, `${TMP_PREFIX}${stamp}-${index}${path.extname(move.from)}`);
-      await fs.rename(move.from, staged);
-      move.from = staged;
-    }
+  const stamp = `${Date.now()}`;
+  let stagedAny = false;
+  for (const [index, move] of allMoves.entries()) {
+    const fromInDest = await sameDirectory(path.dirname(move.from), destDir);
+    const targetExists = await pathExists(move.to);
+    if (!fromInDest && !targetExists) continue;
+    if (await sameFile(move.from, move.to)) continue;
+    const staged = path.join(destDir, `${TMP_PREFIX}${stamp}-${index}${path.extname(move.from)}`);
+    await fs.rename(move.from, staged);
+    move.from = staged;
+    stagedAny = true;
   }
 
   for (const move of allMoves) {
-    if (await pathExists(move.to) && path.resolve(move.from) !== path.resolve(move.to)) {
+    if (await pathExists(move.to) && !(await sameFile(move.from, move.to))) {
       console.error(`✗ Refusing to overwrite ${rel(move.to)}`);
       process.exit(1);
     }
-    await transfer(move.from, move.to, values.move || needsStaging);
+    await transfer(move.from, move.to, values.move || stagedAny);
   }
 
   if (readmeFrom && !(await findReadme(destDir))) {
