@@ -125,6 +125,7 @@ npm run dev               # build once, then serve dist/ at http://localhost:417
 npm run serve              # just serve the existing dist/ (skip rebuild)
 npm run new-project        # interactive: scaffold a new projects/ or series/ folder + readme.md
 npm run import-photos -- --source "/path/to/photos" --dest series/kolkata
+npm run merge-folders -- --dest series/mullick-ghat "series/Mullick Ghat"
 npm run thumbs            # write missing 320px thumbnails next to existing images
 ```
 
@@ -153,6 +154,26 @@ instead of copy), `--dry-run` (preview without writing anything),
 `--ensure-thumbs` (write missing thumbnails next to every existing image;
 no `--source` / `--dest` needed). Each import also writes a 320px
 `*.thumb.webp` / `*.thumb.jpg` beside the new file.
+
+### `merge-folders.js`
+
+Combines one or more existing image folders into a single collection. Each
+frame travels with its sidecar `.md` and `*.thumb.webp` / `*.thumb.jpg`.
+Incoming files are numbered after whatever is already in the destination, so
+`01.jpg` in two folders never overwrites.
+
+```bash
+node scripts/merge-folders.js --dest series/mullick-ghat "series/Mullick Ghat"
+node scripts/merge-folders.js --dest series/markets "series/KR Market" "series/Russell Market"
+node scripts/merge-folders.js --dest "series/Mullick Ghat" --repack
+node scripts/merge-folders.js --scan
+```
+
+Useful flags: `--slug` (rewrite the dest folder name to a URL slug),
+`--repack` (renumber the whole destination as one `01, 02, …` sequence),
+`--keep-names` (don't renumber incoming files), `--move` (relocate instead of
+copy), `--dry-run` (preview without writing), `--start N` (first number for
+incoming frames). Default is copy — sources stay put until you pass `--move`.
 
 ### `new-project.js`
 
