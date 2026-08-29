@@ -399,18 +399,18 @@ body.intro-done .highlight-item .frame {
 @media (max-width: 799px) {
   .selected {
     z-index: 2;
-    scroll-margin-top: var(--header-h);
+    scroll-margin-top: 0;
   }
   .selected-sticky {
-    position: relative;
-    top: auto;
-    height: calc(100svh - var(--header-h));
-    height: calc(100dvh - var(--header-h));
-    min-height: calc(100svh - var(--header-h));
-    min-height: calc(100dvh - var(--header-h));
-    padding-top: 0.45rem;
+    position: sticky;
+    top: 0;
+    height: 100svh;
+    height: 100dvh;
+    min-height: 100svh;
+    min-height: 100dvh;
+    padding-top: calc(var(--header-h) + 0.25rem);
     padding-bottom: max(0.55rem, env(safe-area-inset-bottom, 0px));
-    touch-action: auto;
+    touch-action: pan-y;
   }
   .selected-head {
     margin-bottom: 0.2rem;
@@ -529,11 +529,11 @@ body.intro-done .highlight-item .frame {
 
 @media (max-width: 799px) and (orientation: landscape) and (max-height: 540px) {
   .selected-sticky {
-    height: calc(100svh - var(--header-h));
-    height: calc(100dvh - var(--header-h));
-    min-height: calc(100svh - var(--header-h));
-    min-height: calc(100dvh - var(--header-h));
-    padding-top: 0.2rem;
+    height: 100svh;
+    height: 100dvh;
+    min-height: 100svh;
+    min-height: 100dvh;
+    padding-top: calc(var(--header-h) + 0.1rem);
     padding-bottom: max(0.3rem, env(safe-area-inset-bottom, 0px));
   }
   .highlight-track {

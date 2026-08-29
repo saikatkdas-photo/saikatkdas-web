@@ -137,6 +137,11 @@
   if (selectedSection && selectedSticky && highlightTrack) {
     var selectedMobileMq = window.matchMedia('(max-width: 799px)');
     var extraX = 0;
+    var extraY = 0;
+    var hiStart = 0;
+    var hiEnd = 0;
+    var hiSyncLock = false;
+    var HI_MOBILE_GAIN = 2.5;
     var hiCards = Array.prototype.slice.call(highlightTrack.querySelectorAll('[data-highlight-card]'));
     var hiItems = Array.prototype.slice.call(highlightTrack.querySelectorAll('.highlight-item'));
     var hiX = 0;
@@ -218,6 +223,7 @@
       highlightRail.style.transform = 'translate3d(' + (-hiX).toFixed(2) + 'px,0,0)';
       updateHighlightFocus();
       if (hiCoasting && !hiDrag.active) {
+        syncPageToHiX();
         hiQueued = window.requestAnimationFrame(paintHighlight);
       }
     }
@@ -244,24 +250,59 @@
       setHighlightX(hiX + (r.left + r.width / 2) - cx);
     }
 
-    function highlightAtStart() { return hiX <= 0.5; }
-    function highlightAtEnd() { return hiX >= highlightMax() - 0.5; }
+    function highlightAtStart() { return hiX <= hiStart + 0.5; }
+    function highlightAtEnd() { return hiX >= hiEnd - 0.5; }
+
+    function mobileTravelY(maxX) {
+      if (maxX <= 0) return 0;
+      return Math.min(maxX / HI_MOBILE_GAIN, window.innerHeight * 2.1);
+    }
+
+    function readCenterOffset(item) {
+      if (!item) return 0;
+      var box = highlightTrack.getBoundingClientRect();
+      var r = item.getBoundingClientRect();
+      return Math.max(0, hiX + (r.left + r.width / 2) - (box.left + box.width / 2));
+    }
+
+    function scrollProgress() {
+      if (extraY <= 0) return 0;
+      var top = selectedSection.getBoundingClientRect().top;
+      return Math.min(1, Math.max(0, -top / extraY));
+    }
+
+    function syncPageToHiX() {
+      if (!isSelectedMobile() || extraY <= 0) return;
+      var span = Math.max(0, hiEnd - hiStart);
+      if (span <= 0) return;
+      var progress = Math.min(1, Math.max(0, (hiX - hiStart) / span));
+      var absTop = selectedSection.getBoundingClientRect().top + window.scrollY;
+      hiSyncLock = true;
+      window.scrollTo(0, absTop + progress * extraY);
+      window.requestAnimationFrame(function () { hiSyncLock = false; });
+    }
 
     function measureSelected() {
       if (isSelectedMobile()) {
-        selectedSection.style.height = '';
-        highlightTrack.scrollLeft = 0;
         selectedSection.classList.add('is-pan');
-        hiX = clampHiX(hiX);
-        if (!hiTouched && hiItems[0]) {
-          window.requestAnimationFrame(function () { centerHighlightItem(hiItems[0]); });
-        } else {
-          queueHighlightPaint();
-        }
+        highlightTrack.scrollLeft = 0;
+        extraX = highlightMax();
+        hiStart = readCenterOffset(hiItems[0]);
+        hiEnd = readCenterOffset(hiItems[hiItems.length - 1]);
+        if (hiEnd < hiStart) hiEnd = extraX;
+        extraY = mobileTravelY(Math.max(0, hiEnd - hiStart));
+        selectedSection.style.height = extraY > 8
+          ? (selectedSticky.offsetHeight + extraY) + 'px'
+          : '';
+        if (hiDrag.active) queueHighlightPaint();
+        else syncSelected();
         return;
       }
       selectedSection.classList.remove('is-pan');
       hiTouched = false;
+      extraY = 0;
+      hiStart = 0;
+      hiEnd = 0;
       stopHighlightCoast();
       clearHighlightFocus();
       extraX = Math.max(0, highlightTrack.scrollWidth - highlightTrack.clientWidth);
@@ -272,7 +313,18 @@
     }
 
     function syncSelected() {
-      if (isSelectedMobile() || extraX <= 0) return;
+      if (isSelectedMobile()) {
+        if (!highlightRail || extraY <= 0) {
+          if (!hiTouched && hiItems[0]) centerHighlightItem(hiItems[0]);
+          else queueHighlightPaint();
+          return;
+        }
+        var span = Math.max(0, hiEnd - hiStart);
+        hiX = clampHiX(hiStart + scrollProgress() * span);
+        queueHighlightPaint();
+        return;
+      }
+      if (extraX <= 0) return;
       var top = selectedSection.getBoundingClientRect().top;
       var scrolled = Math.min(extraX, Math.max(0, -top));
       if (Math.abs(highlightTrack.scrollLeft - scrolled) > 0.5) {
@@ -282,11 +334,14 @@
 
     var selectedTick = false;
     function onSelectedScroll() {
-      if (isSelectedMobile()) return;
+      if (hiSyncLock || hiDrag.active) return;
       if (selectedTick) return;
       selectedTick = true;
       requestAnimationFrame(function () {
-        syncSelected();
+        if (!hiSyncLock && !hiDrag.active) {
+          if (isSelectedMobile()) stopHighlightCoast();
+          syncSelected();
+        }
         selectedTick = false;
       });
     }
@@ -312,7 +367,7 @@
 
     highlightTrack.addEventListener('wheel', function (e) {
       if (isSelectedMobile()) {
-        if (!highlightRail) return;
+        if (extraY <= 2) return;
         var delta = e.deltaY + e.deltaX;
         if (e.deltaMode === 1) delta *= 12;
         if (e.deltaMode === 2) delta *= highlightTrack.clientHeight;
@@ -322,7 +377,7 @@
         e.preventDefault();
         hiTouched = true;
         stopHighlightCoast();
-        setHighlightX(hiX + delta);
+        window.scrollBy(0, delta);
         return;
       }
       if (extraX <= 2) return;
@@ -383,6 +438,7 @@
         hiDrag.lastY = e.clientY;
         hiDrag.lastT = now;
         queueHighlightPaint();
+        syncPageToHiX();
         return;
       }
       if (!deskDrag.active) return;
@@ -433,21 +489,25 @@
         hiTouched = true;
         stopHighlightCoast();
         setHighlightX(hiX + step);
+        syncPageToHiX();
       } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
         e.preventDefault();
         hiTouched = true;
         stopHighlightCoast();
         setHighlightX(hiX - step);
+        syncPageToHiX();
       } else if (e.key === 'Home') {
         e.preventDefault();
         hiTouched = true;
         stopHighlightCoast();
-        setHighlightX(0);
+        setHighlightX(hiStart);
+        syncPageToHiX();
       } else if (e.key === 'End') {
         e.preventDefault();
         hiTouched = true;
         stopHighlightCoast();
         setHighlightX(highlightMax());
+        syncPageToHiX();
       }
     });
   }
