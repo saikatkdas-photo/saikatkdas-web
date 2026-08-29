@@ -47,14 +47,19 @@ function renderHighlightItem(highlight, index, stagger) {
   const first = tagged[0] || '';
   const subLabel = first ? first[0].toUpperCase() + first.slice(1) : '';
   const jitter = stagger === 'jitter' ? highlightJitter(index, image) : { shape: 'sq', wVw: 72, liftVh: 0, align: 'end' };
+  const ratio = image?.rendered?.width && image?.rendered?.height
+    ? image.rendered.width / image.rendered.height
+    : 1.5;
   const style = stagger === 'none'
-    ? `--hi-i:${index}`
-    : `--hi-i:${index}; --hi-w:${jitter.wVw}vw; --hi-lift:${jitter.liftVh}vh`;
+    ? `--hi-i:${index}; --ar:${ratio.toFixed(4)}`
+    : `--hi-i:${index}; --hi-w:${jitter.wVw}vw; --hi-lift:${jitter.liftVh}vh; --ar:${ratio.toFixed(4)}`;
   const kind = parentKind(collection);
   const parentHref = image.sheet?.href || collection?.href || href;
   return `<a class="highlight-item" href="${parentHref}" data-shape="${jitter.shape}" data-align="${jitter.align}" style="${style}" data-lightbox-group="highlights" ${lightboxTriggerAttrs(image)}>
-    <div class="frame">
-      ${renderPicture(image, { sizes: '(min-width: 800px) 50vw, 92vw', loading: index === 0 ? 'eager' : 'lazy', fetchpriority: index === 0 ? 'high' : undefined })}
+    <div class="highlight-media" data-highlight-card>
+      <div class="frame">
+        ${renderPicture(image, { sizes: '(min-width: 800px) 50vw, 78vw', loading: index === 0 ? 'eager' : 'lazy', fetchpriority: index === 0 ? 'high' : undefined })}
+      </div>
     </div>
     <div class="highlight-caption">
       <span>
@@ -123,8 +128,12 @@ export function renderHome(data) {
         <h2 class="selected-title">Selected</h2>
         <span class="selected-count">(${highlights.length})</span>
       </div>
-      <div class="highlight-track" data-highlight-track data-stagger="${stagger}">
-        ${highlights.map((h, i) => renderHighlightItem(h, i, stagger)).join('\n')}
+      <div class="highlight-track" data-highlight-track data-stagger="${stagger}" tabindex="-1" aria-label="Selected photographs">
+        <div class="highlight-rail" data-highlight-rail>
+          <div class="highlight-spacer" aria-hidden="true"></div>
+          ${highlights.map((h, i) => renderHighlightItem(h, i, stagger)).join('\n')}
+          <div class="highlight-spacer" aria-hidden="true"></div>
+        </div>
       </div>
       ${renderSelectedStrip(nav, flags, controls)}
     </div>

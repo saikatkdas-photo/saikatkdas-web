@@ -129,14 +129,141 @@
     document.body.classList.add('intro-done');
   }
 
-  /* ---------------- Selected: pin + convert vertical scroll to horizontal --- */
+  /* ---------------- Selected: desktop pin-scroll / mobile timeline pan --- */
   var selectedSection = document.querySelector('[data-selected]');
   var selectedSticky = document.querySelector('[data-selected-sticky]');
   var highlightTrack = document.querySelector('[data-highlight-track]') || document.querySelector('.highlight-track');
+  var highlightRail = document.querySelector('[data-highlight-rail]');
   if (selectedSection && selectedSticky && highlightTrack) {
+    var selectedMobileMq = window.matchMedia('(max-width: 799px)');
     var extraX = 0;
+    var hiCards = Array.prototype.slice.call(highlightTrack.querySelectorAll('[data-highlight-card]'));
+    var hiItems = Array.prototype.slice.call(highlightTrack.querySelectorAll('.highlight-item'));
+    var hiX = 0;
+    var hiVel = 0;
+    var hiQueued = 0;
+    var hiCoasting = false;
+    var hiTouched = false;
+    var hiDrag = {
+      active: false,
+      moved: false,
+      axis: null,
+      captured: false,
+      startX: 0,
+      startY: 0,
+      lastX: 0,
+      lastY: 0,
+      lastT: 0,
+      pointerId: null
+    };
+    var deskDrag = { active: false, moved: false, startX: 0, startY: 0, pointerId: null };
+
+    function isSelectedMobile() {
+      return selectedMobileMq.matches || window.innerWidth <= 799;
+    }
+
+    function hiSmooth(x) {
+      x = Math.min(1, Math.max(0, x));
+      return x * x * (3 - 2 * x);
+    }
+
+    function highlightMax() {
+      if (!highlightRail) return 0;
+      return Math.max(0, highlightRail.scrollWidth - highlightTrack.clientWidth);
+    }
+
+    function clampHiX(next) {
+      var max = highlightMax();
+      if (next < 0) return 0;
+      if (next > max) return max;
+      return next;
+    }
+
+    function updateHighlightFocus() {
+      if (reducedMotion || !hiCards.length) return;
+      var box = highlightTrack.getBoundingClientRect();
+      var cx = box.left + box.width / 2;
+      var range = Math.max(120, box.width * 0.52);
+      for (var i = 0; i < hiCards.length; i += 1) {
+        var card = hiCards[i];
+        var slot = card.closest('.highlight-item') || card.parentElement;
+        var rect = slot.getBoundingClientRect();
+        var t = hiSmooth(1 - Math.abs(rect.left + rect.width / 2 - cx) / range);
+        card.style.transform = 'scale(' + (0.92 + 0.08 * t).toFixed(4) + ')';
+        card.style.opacity = (0.86 + 0.14 * t).toFixed(3);
+      }
+    }
+
+    function clearHighlightFocus() {
+      for (var i = 0; i < hiCards.length; i += 1) {
+        hiCards[i].style.transform = '';
+        hiCards[i].style.opacity = '';
+      }
+      if (highlightRail) highlightRail.style.transform = '';
+    }
+
+    function paintHighlight() {
+      hiQueued = 0;
+      if (!highlightRail || !isSelectedMobile()) return;
+      if (hiCoasting && !hiDrag.active) {
+        hiX = clampHiX(hiX + hiVel);
+        hiVel *= 0.962;
+        var max = highlightMax();
+        if (hiX <= 0.2 || hiX >= max - 0.2 || Math.abs(hiVel) < 0.06) {
+          hiCoasting = false;
+          hiVel = 0;
+          hiX = clampHiX(hiX);
+        }
+      }
+      highlightRail.style.transform = 'translate3d(' + (-hiX).toFixed(2) + 'px,0,0)';
+      updateHighlightFocus();
+      if (hiCoasting && !hiDrag.active) {
+        hiQueued = window.requestAnimationFrame(paintHighlight);
+      }
+    }
+
+    function queueHighlightPaint() {
+      if (!hiQueued) hiQueued = window.requestAnimationFrame(paintHighlight);
+    }
+
+    function stopHighlightCoast() {
+      hiCoasting = false;
+      hiVel = 0;
+    }
+
+    function setHighlightX(next) {
+      hiX = clampHiX(next);
+      queueHighlightPaint();
+    }
+
+    function centerHighlightItem(item) {
+      if (!item) return;
+      var box = highlightTrack.getBoundingClientRect();
+      var cx = box.left + box.width / 2;
+      var r = item.getBoundingClientRect();
+      setHighlightX(hiX + (r.left + r.width / 2) - cx);
+    }
+
+    function highlightAtStart() { return hiX <= 0.5; }
+    function highlightAtEnd() { return hiX >= highlightMax() - 0.5; }
 
     function measureSelected() {
+      if (isSelectedMobile()) {
+        selectedSection.style.height = '';
+        highlightTrack.scrollLeft = 0;
+        selectedSection.classList.add('is-pan');
+        hiX = clampHiX(hiX);
+        if (!hiTouched && hiItems[0]) {
+          window.requestAnimationFrame(function () { centerHighlightItem(hiItems[0]); });
+        } else {
+          queueHighlightPaint();
+        }
+        return;
+      }
+      selectedSection.classList.remove('is-pan');
+      hiTouched = false;
+      stopHighlightCoast();
+      clearHighlightFocus();
       extraX = Math.max(0, highlightTrack.scrollWidth - highlightTrack.clientWidth);
       selectedSection.style.height = extraX > 8
         ? (selectedSticky.offsetHeight + extraX) + 'px'
@@ -145,7 +272,7 @@
     }
 
     function syncSelected() {
-      if (extraX <= 0) return;
+      if (isSelectedMobile() || extraX <= 0) return;
       var top = selectedSection.getBoundingClientRect().top;
       var scrolled = Math.min(extraX, Math.max(0, -top));
       if (Math.abs(highlightTrack.scrollLeft - scrolled) > 0.5) {
@@ -155,6 +282,7 @@
 
     var selectedTick = false;
     function onSelectedScroll() {
+      if (isSelectedMobile()) return;
       if (selectedTick) return;
       selectedTick = true;
       requestAnimationFrame(function () {
@@ -165,6 +293,14 @@
 
     window.addEventListener('scroll', onSelectedScroll, { passive: true });
     window.addEventListener('resize', measureSelected);
+    if (selectedMobileMq.addEventListener) {
+      selectedMobileMq.addEventListener('change', measureSelected);
+    } else if (selectedMobileMq.addListener) {
+      selectedMobileMq.addListener(measureSelected);
+    }
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener('resize', measureSelected);
+    }
     if (typeof ResizeObserver !== 'undefined') {
       new ResizeObserver(measureSelected).observe(highlightTrack);
     }
@@ -175,41 +311,145 @@
     window.setTimeout(measureSelected, 800);
 
     highlightTrack.addEventListener('wheel', function (e) {
+      if (isSelectedMobile()) {
+        if (!highlightRail) return;
+        var delta = e.deltaY + e.deltaX;
+        if (e.deltaMode === 1) delta *= 12;
+        if (e.deltaMode === 2) delta *= highlightTrack.clientHeight;
+        if (!delta) return;
+        if (delta < 0 && highlightAtStart()) return;
+        if (delta > 0 && highlightAtEnd()) return;
+        e.preventDefault();
+        hiTouched = true;
+        stopHighlightCoast();
+        setHighlightX(hiX + delta);
+        return;
+      }
       if (extraX <= 2) return;
       if (Math.abs(e.deltaY) <= Math.abs(e.deltaX) && e.deltaX !== 0) return;
       e.preventDefault();
       window.scrollBy(0, e.deltaY + e.deltaX);
     }, { passive: false });
 
-    var drag = { active: false, moved: false, startX: 0, startY: 0, pointerId: null };
     highlightTrack.addEventListener('pointerdown', function (e) {
+      if (isSelectedMobile()) {
+        if (e.pointerType === 'mouse' && e.button !== 0) return;
+        stopHighlightCoast();
+        hiDrag.active = true;
+        hiDrag.moved = false;
+        hiDrag.axis = null;
+        hiDrag.captured = false;
+        hiDrag.startX = e.clientX;
+        hiDrag.startY = e.clientY;
+        hiDrag.lastX = e.clientX;
+        hiDrag.lastY = e.clientY;
+        hiDrag.lastT = performance.now();
+        hiDrag.pointerId = e.pointerId;
+        hiVel = 0;
+        return;
+      }
       if (e.pointerType === 'touch') return;
-      drag.active = true;
-      drag.moved = false;
-      drag.startX = e.clientX;
-      drag.startY = window.scrollY;
-      drag.pointerId = e.pointerId;
+      deskDrag.active = true;
+      deskDrag.moved = false;
+      deskDrag.startX = e.clientX;
+      deskDrag.startY = window.scrollY;
+      deskDrag.pointerId = e.pointerId;
       highlightTrack.setPointerCapture(e.pointerId);
     });
     highlightTrack.addEventListener('pointermove', function (e) {
-      if (!drag.active) return;
-      var dx = e.clientX - drag.startX;
-      if (Math.abs(dx) > 4) drag.moved = true;
-      window.scrollTo(0, drag.startY - dx);
-    });
-    function endDrag(e) {
-      if (!drag.active) return;
-      drag.active = false;
-      if (e && drag.pointerId != null) {
-        try { highlightTrack.releasePointerCapture(drag.pointerId); } catch (err) {}
+      if (isSelectedMobile()) {
+        if (!hiDrag.active) return;
+        var adx = Math.abs(e.clientX - hiDrag.startX);
+        var ady = Math.abs(e.clientY - hiDrag.startY);
+        if (!hiDrag.axis) {
+          if (adx < 6 && ady < 6) return;
+          hiDrag.axis = adx > ady * 1.15 ? 'x' : 'y';
+          if (hiDrag.axis === 'x' && !hiDrag.captured) {
+            try { highlightTrack.setPointerCapture(e.pointerId); } catch (err) {}
+            hiDrag.captured = true;
+          }
+        }
+        if (hiDrag.axis !== 'x') return;
+        hiTouched = true;
+        if (e.cancelable) e.preventDefault();
+        var now = performance.now();
+        var dt = Math.max(4, now - hiDrag.lastT);
+        var d = (hiDrag.lastX - e.clientX) + (hiDrag.lastY - e.clientY);
+        if (adx + ady > 1.5) hiDrag.moved = true;
+        hiX = clampHiX(hiX + d);
+        var inst = d * (16.67 / dt);
+        hiVel = hiVel * 0.42 + inst * 0.58;
+        hiDrag.lastX = e.clientX;
+        hiDrag.lastY = e.clientY;
+        hiDrag.lastT = now;
+        queueHighlightPaint();
+        return;
+      }
+      if (!deskDrag.active) return;
+      var dx = e.clientX - deskDrag.startX;
+      if (Math.abs(dx) > 4) deskDrag.moved = true;
+      window.scrollTo(0, deskDrag.startY - dx);
+    }, { passive: false });
+    function endSelectedDrag(e) {
+      if (hiDrag.active) {
+        hiDrag.active = false;
+        if (e && hiDrag.pointerId != null && hiDrag.captured) {
+          try { highlightTrack.releasePointerCapture(hiDrag.pointerId); } catch (err) {}
+        }
+        hiDrag.captured = false;
+        hiDrag.axis = null;
+        if (performance.now() - hiDrag.lastT > 80) hiVel = 0;
+        if (reducedMotion) {
+          hiVel = 0;
+          return;
+        }
+        if (Math.abs(hiVel) > 0.12) {
+          hiCoasting = true;
+          queueHighlightPaint();
+        } else {
+          hiVel = 0;
+        }
+        return;
+      }
+      if (!deskDrag.active) return;
+      deskDrag.active = false;
+      if (e && deskDrag.pointerId != null) {
+        try { highlightTrack.releasePointerCapture(deskDrag.pointerId); } catch (err) {}
       }
     }
-    highlightTrack.addEventListener('pointerup', endDrag);
-    highlightTrack.addEventListener('pointercancel', endDrag);
+    highlightTrack.addEventListener('pointerup', endSelectedDrag);
+    highlightTrack.addEventListener('pointercancel', endSelectedDrag);
     highlightTrack.addEventListener('click', function (e) {
-      if (drag.moved) { e.preventDefault(); e.stopPropagation(); }
-      drag.moved = false;
+      if (deskDrag.moved || hiDrag.moved) { e.preventDefault(); e.stopPropagation(); }
+      deskDrag.moved = false;
+      hiDrag.moved = false;
     }, true);
+
+    highlightTrack.addEventListener('keydown', function (e) {
+      if (!isSelectedMobile()) return;
+      var step = Math.max(96, highlightTrack.clientWidth * 0.38);
+      if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+        e.preventDefault();
+        hiTouched = true;
+        stopHighlightCoast();
+        setHighlightX(hiX + step);
+      } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+        e.preventDefault();
+        hiTouched = true;
+        stopHighlightCoast();
+        setHighlightX(hiX - step);
+      } else if (e.key === 'Home') {
+        e.preventDefault();
+        hiTouched = true;
+        stopHighlightCoast();
+        setHighlightX(0);
+      } else if (e.key === 'End') {
+        e.preventDefault();
+        hiTouched = true;
+        stopHighlightCoast();
+        setHighlightX(highlightMax());
+      }
+    });
   }
 
   /* ---------------- Timeline: transform pan, newest first ------------------- */
@@ -434,7 +674,14 @@
   }
 
   /* ---------------- Parallax on hero/cover images ---------------- */
-  var parallaxTargets = document.querySelectorAll('.detail-cover .pic, .highlight-item .pic');
+  var parallaxTargets = Array.prototype.slice.call(
+    document.querySelectorAll('.detail-cover .pic, .highlight-item .pic')
+  );
+  if (window.matchMedia('(max-width: 799px)').matches) {
+    parallaxTargets = parallaxTargets.filter(function (el) {
+      return !el.closest('.highlight-item');
+    });
+  }
   if (!reducedMotion && parallaxTargets.length && 'IntersectionObserver' in window) {
     var visible = new Set();
     var pio = new IntersectionObserver(function (entries) {
