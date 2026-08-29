@@ -37,8 +37,15 @@ series' `readme.md`) cascade down to every image inside it, so you only have
 to tag the series once with `kolkata` and every photo in it inherits that tag.
 
 **Highlights** (the homepage selected gallery) are images with
-`highlight: true` in their own `.md` file. Clicking one opens it fullscreen;
-a half-card at the bottom leads into the parent series or project.
+`highlight: true` in their own `.md` file. Clicking one opens it fullscreen.
+On a phone, swipe up to reveal a half-card with the series title and
+thumbnails of that series' highlights (or its latest frames if none are
+highlighted). Swipe up again to open the series or project.
+
+Every source image has a sibling thumbnail (`01.thumb.webp` / `01.thumb.jpg`),
+written during `import-photos` and used on small surfaces (the half-card,
+timeline grid, related-work cards). Generate any missing ones with
+`npm run thumbs`.
 
 **Untitled** (`/untitled/`) is every frame in `photos/`. **Timeline**
 (`/timeline/`) groups every gallery image by year, with a hero frame then
@@ -118,6 +125,7 @@ npm run dev               # build once, then serve dist/ at http://localhost:417
 npm run serve              # just serve the existing dist/ (skip rebuild)
 npm run new-project        # interactive: scaffold a new projects/ or series/ folder + readme.md
 npm run import-photos -- --source "/path/to/photos" --dest series/kolkata
+npm run thumbs            # write missing 320px thumbnails next to existing images
 ```
 
 ### `import-photos.js`
@@ -141,7 +149,10 @@ Useful flags: `--tags a,b,c` (extra tags for every imported image),
 `--highlight` (mark all as homepage highlights), `--highlight-start N`
 (starting order number), `--link /some/path/` (override highlight link
 target), `--keep-names` (don't renumber sequentially), `--move` (move
-instead of copy), `--dry-run` (preview without writing anything).
+instead of copy), `--dry-run` (preview without writing anything),
+`--ensure-thumbs` (write missing thumbnails next to every existing image;
+no `--source` / `--dest` needed). Each import also writes a 320px
+`*.thumb.webp` / `*.thumb.jpg` beside the new file.
 
 ### `new-project.js`
 

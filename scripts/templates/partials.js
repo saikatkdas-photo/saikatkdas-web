@@ -27,16 +27,36 @@ export function visibleNav(nav, flags) {
   });
 }
 
+function sheetThumbPayload(image) {
+  const thumb = image?.rendered?.thumb;
+  if (!thumb || !image.rendered?.publicDir) return null;
+  return {
+    webp: `${image.rendered.publicDir}/${thumb.webp}`,
+    jpg: `${image.rendered.publicDir}/${thumb.jpg}`,
+    alt: image.alt || '',
+  };
+}
+
 /** Render a <picture> for an already-processed image (see build.js `processImage`). */
-export function renderPicture(image, { sizes = '100vw', loading = 'lazy', fetchpriority } = {}) {
+export function renderPicture(image, { sizes = '100vw', loading = 'lazy', fetchpriority, variant } = {}) {
   if (!image || !image.rendered) {
     return `<div class="img-missing" role="img" aria-label="${escapeHtml(image?.alt || 'Image pending')}"></div>`;
   }
-  const { outputs, width, height, publicDir } = image.rendered;
+  const { outputs, width, height, publicDir, thumb } = image.rendered;
+  const priorityAttr = fetchpriority ? ` fetchpriority="${fetchpriority}"` : '';
+
+  if (variant === 'thumb' && thumb) {
+    const tw = thumb.width || width || 320;
+    const th = thumb.height || height || tw;
+    return `<picture class="pic pic-thumb" style="aspect-ratio:${tw} / ${th};">
+    <source type="image/webp" srcset="${publicDir}/${thumb.webp}">
+    <img src="${publicDir}/${thumb.jpg}" width="${tw}" height="${th}" alt="${escapeHtml(image.alt)}" loading="${loading}"${priorityAttr} decoding="async">
+  </picture>`;
+  }
+
   const webpSrcset = outputs.map((o) => `${publicDir}/${o.webp} ${o.width}w`).join(', ');
   const jpgSrcset = outputs.map((o) => `${publicDir}/${o.jpg} ${o.width}w`).join(', ');
   const fallback = `${publicDir}/${outputs[outputs.length - 1].jpg}`;
-  const priorityAttr = fetchpriority ? ` fetchpriority="${fetchpriority}"` : '';
   const ratio = width && height ? `${width} / ${height}` : 'auto';
   return `<picture class="pic" style="aspect-ratio:${ratio};">
     <source type="image/webp" srcset="${webpSrcset}" sizes="${sizes}">
@@ -44,11 +64,11 @@ export function renderPicture(image, { sizes = '100vw', loading = 'lazy', fetchp
   </picture>`;
 }
 
-export function lightboxTriggerAttrs(image) {
+export function lightboxTriggerAttrs(image, opts = {}) {
   if (!image?.rendered) return '';
   const largest = image.rendered.outputs[image.rendered.outputs.length - 1];
   const full = `${image.rendered.publicDir}/${largest.jpg}`;
-  return [
+  const attrs = [
     `data-lightbox-trigger="${full}"`,
     `data-full="${full}"`,
     `data-alt="${escapeHtml(image.alt)}"`,
@@ -61,7 +81,23 @@ export function lightboxTriggerAttrs(image) {
     image.iso ? `data-iso="${escapeHtml(image.iso)}"` : '',
     image.focalLength ? `data-focal-length="${escapeHtml(image.focalLength)}"` : '',
     image.takenAt ? `data-taken-at="${escapeHtml(image.takenAt)}"` : '',
-  ].filter(Boolean).join(' ');
+  ];
+
+  if (opts.includeSheet !== false && image.sheet?.href && image.sheet.title) {
+    const thumbs = (image.sheetPreviews || [])
+      .map(sheetThumbPayload)
+      .filter(Boolean);
+    attrs.push(
+      `data-parent-href="${escapeHtml(image.sheet.href)}"`,
+      `data-parent-title="${escapeHtml(image.sheet.title)}"`,
+      `data-parent-kind="${escapeHtml(image.sheet.kind || 'Series')}"`,
+    );
+    if (thumbs.length) {
+      attrs.push(`data-parent-thumbs="${escapeHtml(JSON.stringify(thumbs))}"`);
+    }
+  }
+
+  return attrs.filter(Boolean).join(' ');
 }
 
 export function renderHeader({ owner, nav, flags, activeKey }) {
@@ -124,16 +160,14 @@ export function renderLightboxMarkup() {
       <p class="lightbox-story" data-lightbox-story></p>
     </div>
     <aside class="lightbox-sheet" data-lightbox-sheet hidden>
-      <button type="button" class="lightbox-sheet-handle" data-sheet-handle aria-label="Open related series">
+      <button type="button" class="lightbox-sheet-handle" data-sheet-handle aria-expanded="false" aria-label="Open related series">
         <span class="lightbox-sheet-knob"></span>
       </button>
-      <div class="lightbox-sheet-peek">
-        <p class="lightbox-sheet-title" data-sheet-title></p>
-        <p class="lightbox-sheet-kind" data-sheet-kind></p>
-      </div>
       <div class="lightbox-sheet-body">
-        <p class="lightbox-sheet-summary" data-sheet-summary></p>
-        <a class="btn lightbox-sheet-link" data-sheet-link href="#">Open series</a>
+        <p class="lightbox-sheet-kind" data-sheet-kind></p>
+        <p class="lightbox-sheet-title" data-sheet-title></p>
+        <div class="lightbox-sheet-thumbs" data-sheet-thumbs hidden></div>
+        <a class="lightbox-sheet-link" data-sheet-link href="#">Open series</a>
       </div>
     </aside>
   </div>`;

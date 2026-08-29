@@ -1,8 +1,9 @@
 import { renderPicture, lightboxTriggerAttrs, escapeHtml } from './partials.js';
 
-export function renderGalleryItem(image, groupSlug) {
-  return `<figure class="gallery-item" data-lightbox-group="${groupSlug}" role="button" tabindex="0" aria-label="Open larger image${image.caption ? ': ' + escapeHtml(image.caption) : ''}" ${lightboxTriggerAttrs(image)}>
-    <div class="frame">${renderPicture(image, { sizes: '(min-width: 800px) 32vw, 92vw' })}</div>
+export function renderGalleryItem(image, groupSlug, opts = {}) {
+  const includeSheet = opts.includeSheet === true;
+  return `<figure class="gallery-item" data-lightbox-group="${groupSlug}" role="button" tabindex="0" aria-label="Open larger image${image.caption ? ': ' + escapeHtml(image.caption) : ''}" ${lightboxTriggerAttrs(image, { includeSheet })}>
+    <div class="frame">${renderPicture(image, { sizes: opts.sizes || '(min-width: 800px) 32vw, 92vw', variant: opts.variant, loading: opts.loading })}</div>
     ${image.caption ? `<figcaption class="gallery-caption">${escapeHtml(image.caption)}</figcaption>` : ''}
   </figure>`;
 }
@@ -40,7 +41,7 @@ export function renderCollectionDetail(collection, { backHref, backLabel, moreCo
     <p class="label label-paren">More</p>
     <div class="more-row">
       ${moreCollections.map((c) => `<a class="card" href="${c.href}">
-        <div class="frame">${c.cover ? renderPicture(c.cover, { sizes: '220px' }) : ''}</div>
+        <div class="frame">${c.cover ? renderPicture(c.cover, { sizes: '220px', variant: 'thumb' }) : ''}</div>
         <div class="card-body"><div class="card-title">${escapeHtml(c.title)}</div></div>
       </a>`).join('\n')}
     </div>

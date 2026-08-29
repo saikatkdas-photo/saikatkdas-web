@@ -16,7 +16,8 @@ photos/
 
 Sidecar fields match series images (`caption`, `story`, `highlight`,
 `cover`, EXIF, tags). Nested folder names that look like words (e.g.
-`Monochrome`) are added as tags.
+`Monochrome`) are added as tags. Import also writes `*.thumb.webp` and
+`*.thumb.jpg` beside each frame for half-cards and other small surfaces.
 
 Untitled photos are also eligible for homepage highlights, themes, and
 the timeline.

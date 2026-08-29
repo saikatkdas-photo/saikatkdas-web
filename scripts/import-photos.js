@@ -18,17 +18,17 @@
  *   --keep-names         Keep original filenames instead of renumbering sequentially
  *   --move               Move instead of copy (default: copy, source untouched)
  *   --dry-run            Print what would happen without writing anything
+ *   --ensure-thumbs      Write missing *.thumb.webp/*.thumb.jpg next to every existing image
  */
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseArgs } from 'node:util';
 import { extractExif } from './lib/exif.js';
-import { detectIsMonochrome } from './lib/image.js';
+import { detectIsMonochrome, generateThumbnail, ensureAllThumbnails, isSourceImageFile } from './lib/image.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..');
-const IMAGE_EXTENSIONS = new Set(['.jpg', '.jpeg', '.png', '.webp']);
 
 function naturalCompare(a, b) {
   return a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' });
@@ -58,11 +58,23 @@ async function main() {
       'keep-names': { type: 'boolean', default: false },
       move: { type: 'boolean', default: false },
       'dry-run': { type: 'boolean', default: false },
+      'ensure-thumbs': { type: 'boolean', default: false },
     },
   });
 
+  if (values['ensure-thumbs'] && !values.source && !values.dest) {
+    if (values['dry-run']) {
+      console.log('(dry run — would write missing thumbnails next to existing images)');
+      return;
+    }
+    const { created, cached } = await ensureAllThumbnails(ROOT);
+    console.log(`✓ Thumbnails: ${created} created, ${cached} already fresh.`);
+    return;
+  }
+
   if (!values.source || !values.dest) {
     console.error('Usage: node scripts/import-photos.js --source <dir> --dest <projects|series|photos>/<slug>');
+    console.error('   or: node scripts/import-photos.js --ensure-thumbs');
     process.exit(1);
   }
 
@@ -88,7 +100,7 @@ async function main() {
   }
 
   const sourceEntries = (await fs.readdir(sourceDir, { withFileTypes: true }))
-    .filter((e) => e.isFile() && IMAGE_EXTENSIONS.has(path.extname(e.name).toLowerCase()))
+    .filter((e) => e.isFile() && isSourceImageFile(e.name))
     .map((e) => e.name)
     .sort(naturalCompare);
 
@@ -98,7 +110,7 @@ async function main() {
   }
 
   const existingEntries = (await fs.readdir(destDir, { withFileTypes: true }))
-    .filter((e) => e.isFile() && IMAGE_EXTENSIONS.has(path.extname(e.name).toLowerCase()))
+    .filter((e) => e.isFile() && isSourceImageFile(e.name))
     .map((e) => e.name);
   const existingNumbers = existingEntries
     .map((f) => Number.parseInt(path.basename(f, path.extname(f)), 10))
@@ -172,6 +184,7 @@ async function main() {
         await fs.copyFile(srcPath, destImagePath);
       }
       await fs.writeFile(destMdPath, frontmatterLines, 'utf8');
+      await generateThumbnail(destImagePath);
     }
 
     rows.push({

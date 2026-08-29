@@ -31,6 +31,17 @@ export function recencyValue(image) {
   return 0;
 }
 
+/** Highlight frames first (latest among them), then latest others. If none are highlights, latest only. */
+export function pickPreviewImages(images, limit = 5) {
+  if (!images?.length) return [];
+  const highlights = images.filter((img) => img.highlight);
+  if (highlights.length) {
+    const rest = images.filter((img) => !img.highlight).sort(compareLatest);
+    return [...highlights.sort(compareLatest), ...rest].slice(0, limit);
+  }
+  return [...images].sort(compareLatest).slice(0, limit);
+}
+
 /** Latest first. */
 export function compareLatest(a, b) {
   const d = recencyValue(b) - recencyValue(a);

@@ -51,10 +51,8 @@ function renderHighlightItem(highlight, index, stagger) {
     ? `--hi-i:${index}`
     : `--hi-i:${index}; --hi-w:${jitter.wVw}vw; --hi-lift:${jitter.liftVh}vh`;
   const kind = parentKind(collection);
-  const parentHref = collection?.href || href;
-  const parentTitle = collection?.title || title;
-  const parentSummary = collection?.summary || '';
-  return `<a class="highlight-item" href="${parentHref}" data-shape="${jitter.shape}" data-align="${jitter.align}" style="${style}" data-lightbox-group="highlights" ${lightboxTriggerAttrs(image)} data-parent-href="${escapeHtml(parentHref)}" data-parent-title="${escapeHtml(parentTitle)}" data-parent-kind="${escapeHtml(kind)}" data-parent-summary="${escapeHtml(parentSummary)}">
+  const parentHref = image.sheet?.href || collection?.href || href;
+  return `<a class="highlight-item" href="${parentHref}" data-shape="${jitter.shape}" data-align="${jitter.align}" style="${style}" data-lightbox-group="highlights" ${lightboxTriggerAttrs(image)}>
     <div class="frame">
       ${renderPicture(image, { sizes: '(min-width: 800px) 50vw, 92vw', loading: index === 0 ? 'eager' : 'lazy', fetchpriority: index === 0 ? 'high' : undefined })}
     </div>

@@ -4,9 +4,8 @@ import matter from 'gray-matter';
 import { renderMarkdown } from './markdown.js';
 import { slugify, titleFromSlug } from './slug.js';
 import { loadControls } from './controls.js';
-import { assignSiteCovers, buildTimelineYears, compareLatest } from './covers.js';
-
-const IMAGE_EXTENSIONS = new Set(['.jpg', '.jpeg', '.png', '.webp']);
+import { assignSiteCovers, buildTimelineYears, compareLatest, pickPreviewImages } from './covers.js';
+import { isSourceImageFile } from './image.js';
 
 function naturalCompare(a, b) {
   return a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' });
@@ -67,7 +66,7 @@ async function walkImageFiles(dir, base = dir) {
     const full = path.join(dir, entry.name);
     if (entry.isDirectory()) {
       files.push(...await walkImageFiles(full, base));
-    } else if (IMAGE_EXTENSIONS.has(path.extname(entry.name).toLowerCase())) {
+    } else if (isSourceImageFile(entry.name)) {
       files.push(path.relative(base, full));
     }
   }
@@ -124,7 +123,7 @@ async function loadCollection(rootDir, typeDir, type, slug) {
 
   const entries = await fs.readdir(collectionDir, { withFileTypes: true });
   const imageFiles = entries
-    .filter((e) => e.isFile() && IMAGE_EXTENSIONS.has(path.extname(e.name).toLowerCase()))
+    .filter((e) => e.isFile() && isSourceImageFile(e.name))
     .map((e) => e.name)
     .sort(naturalCompare);
 
@@ -257,6 +256,34 @@ function buildThemes(allCollections) {
   return themes;
 }
 
+function collectionKind(collection) {
+  if (collection?.type === 'project') return 'Project';
+  if (collection?.type === 'untitled') return 'Untitled';
+  return 'Series';
+}
+
+function attachSheetMeta(collections) {
+  for (const collection of collections) {
+    if (!collection?.images?.length) continue;
+    const previews = pickPreviewImages(collection.images, 5);
+    collection.previewImages = previews;
+    const base = {
+      href: collection.href,
+      title: collection.title,
+      kind: collectionKind(collection),
+      summary: collection.summary || '',
+    };
+    collection.sheet = base;
+    for (const image of collection.images) {
+      image.sheet = {
+        ...base,
+        href: image.link || collection.href,
+      };
+      image.sheetPreviews = previews;
+    }
+  }
+}
+
 function collectHighlights(allCollections) {
   const highlights = [];
   for (const collection of allCollections) {
@@ -290,6 +317,7 @@ export async function loadSite(rootDir) {
   ]);
 
   const allGalleryCollections = [...projects, ...series, untitled].filter((c) => c.images?.length);
+  attachSheetMeta(allGalleryCollections);
   const themes = buildThemes(allGalleryCollections);
   const highlights = collectHighlights(allGalleryCollections);
 

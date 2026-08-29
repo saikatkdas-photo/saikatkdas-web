@@ -31,7 +31,7 @@ function renderYear(block, index) {
     </figure>` : ''}
     ${block.rest.length ? `
     <div class="timeline-grid">
-      ${block.rest.map((img) => renderGalleryItem(img, group)).join('\n')}
+      ${block.rest.map((img) => renderGalleryItem(img, group, { includeSheet: true, variant: 'thumb', sizes: '(min-width: 800px) 22vw, 46vw' })).join('\n')}
     </div>` : ''}
   </section>`;
 }

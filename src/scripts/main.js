@@ -303,7 +303,7 @@
   var sheetHandle = lightbox.querySelector('[data-sheet-handle]');
   var sheetTitle = lightbox.querySelector('[data-sheet-title]');
   var sheetKind = lightbox.querySelector('[data-sheet-kind]');
-  var sheetSummary = lightbox.querySelector('[data-sheet-summary]');
+  var sheetThumbs = lightbox.querySelector('[data-sheet-thumbs]');
   var sheetLink = lightbox.querySelector('[data-sheet-link]');
 
   var groups = {};
@@ -322,7 +322,17 @@
   var lastTap = 0;
   var didPinch = false;
   var sheetOpen = false;
-  var sheetDrag = { active: false, startY: 0, lastY: 0 };
+  var sheetDrag = {
+    active: false,
+    fromStage: false,
+    startY: 0,
+    lastY: 0,
+    lastT: 0,
+    startSheetY: 0,
+    y: 0,
+    startT: 0
+  };
+  var SHEET_COMMIT = 72;
 
   function applyZoom() {
     lightboxImg.style.transform = 'translate(' + zoom.x + 'px,' + zoom.y + 'px) scale(' + zoom.scale + ')';
@@ -364,11 +374,146 @@
     return Math.sqrt(dx * dx + dy * dy);
   }
 
+  function isDesktopSheet() {
+    return window.matchMedia('(min-width: 800px)').matches;
+  }
+
+  function sheetClosedY() {
+    if (!sheet) return 0;
+    var peek = (sheetHandle && sheetHandle.offsetHeight) || 30;
+    return Math.max(0, sheet.offsetHeight - peek);
+  }
+
+  function setSheetCommit(on) {
+    if (!lightbox) return;
+    lightbox.classList.toggle('is-sheet-commit', Boolean(on));
+    if (sheet) sheet.classList.toggle('is-commit', Boolean(on));
+    if (!sheetLink) return;
+    if (on) {
+      if (!sheetLink.dataset.label) sheetLink.dataset.label = sheetLink.textContent;
+      sheetLink.textContent = 'Release to open';
+    } else if (sheetLink.dataset.label) {
+      sheetLink.textContent = sheetLink.dataset.label;
+    }
+  }
+
   function setSheetOpen(open) {
     sheetOpen = Boolean(open);
     if (!sheet) return;
     sheet.classList.toggle('is-open', sheetOpen);
     lightbox.classList.toggle('is-sheet-open', sheetOpen);
+    sheet.classList.remove('is-dragging');
+    sheet.style.transform = '';
+    setSheetCommit(false);
+    if (sheetHandle) sheetHandle.setAttribute('aria-expanded', String(sheetOpen));
+  }
+
+  function applySheetY(y, dragging) {
+    if (!sheet) return;
+    sheet.classList.toggle('is-dragging', Boolean(dragging));
+    if (y == null) {
+      sheet.style.transform = '';
+      return;
+    }
+    sheet.style.transform = 'translate3d(0,' + y + 'px,0)';
+  }
+
+  function resist(over, range) {
+    if (over <= 0) return 0;
+    return (over * range) / (over + range);
+  }
+
+  function beginSheetDrag(clientY, fromStage) {
+    if (!sheet || sheet.hidden || isDesktopSheet()) return false;
+    sheetDrag.active = true;
+    sheetDrag.fromStage = Boolean(fromStage);
+    sheetDrag.startY = clientY;
+    sheetDrag.lastY = clientY;
+    sheetDrag.startT = performance.now();
+    sheetDrag.lastT = sheetDrag.startT;
+    sheetDrag.startSheetY = sheetOpen ? 0 : sheetClosedY();
+    sheetDrag.y = sheetDrag.startSheetY;
+    applySheetY(sheetDrag.y, true);
+    return true;
+  }
+
+  function moveSheetDrag(clientY) {
+    if (!sheetDrag.active) return;
+    var now = performance.now();
+    sheetDrag.lastY = clientY;
+    sheetDrag.lastT = now;
+    var dy = clientY - sheetDrag.startY;
+    var closed = sheetClosedY();
+    var next = sheetDrag.startSheetY + dy;
+    if (next < 0) next = -resist(-next, SHEET_COMMIT * 1.6);
+    if (next > closed) next = closed + resist(next - closed, 48);
+    sheetDrag.y = next;
+    applySheetY(next, true);
+    setSheetCommit(next < -SHEET_COMMIT * 0.45);
+  }
+
+  function commitNavigate() {
+    if (!sheetLink) return;
+    var href = sheetLink.getAttribute('href');
+    if (!href || href === '#') return;
+    window.location.href = href;
+  }
+
+  function endSheetDrag() {
+    if (!sheetDrag.active) return;
+    var fromStage = sheetDrag.fromStage;
+    var dy = sheetDrag.lastY - sheetDrag.startY;
+    var y = sheetDrag.y;
+    var closed = sheetClosedY();
+    var elapsed = Math.max(16, performance.now() - sheetDrag.startT);
+    var flick = dy / elapsed;
+    sheetDrag.active = false;
+    sheetDrag.fromStage = false;
+
+    if (y < -SHEET_COMMIT * 0.5 || (sheetOpen && (dy < -SHEET_COMMIT || flick < -0.55))) {
+      setSheetOpen(true);
+      commitNavigate();
+      return;
+    }
+    if (!sheetOpen && fromStage && dy > 80 && Math.abs(dy) > 40) {
+      setSheetOpen(false);
+      closeLightbox();
+      return;
+    }
+    if (dy < -28 || flick < -0.4 || y < closed * 0.55) setSheetOpen(true);
+    else setSheetOpen(false);
+  }
+
+  function renderSheetThumbs(raw) {
+    if (!sheetThumbs) return;
+    sheetThumbs.innerHTML = '';
+    var thumbs = [];
+    try { thumbs = JSON.parse(raw || '[]'); } catch (err) { thumbs = []; }
+    if (!Array.isArray(thumbs) || !thumbs.length) {
+      sheetThumbs.hidden = true;
+      return;
+    }
+    thumbs.forEach(function (t) {
+      if (!t || !(t.jpg || t.webp)) return;
+      var fig = document.createElement('figure');
+      fig.className = 'lightbox-sheet-thumb';
+      var pic = document.createElement('picture');
+      if (t.webp) {
+        var source = document.createElement('source');
+        source.type = 'image/webp';
+        source.srcset = t.webp;
+        pic.appendChild(source);
+      }
+      var img = document.createElement('img');
+      img.src = t.jpg || t.webp;
+      img.alt = t.alt || '';
+      img.loading = 'lazy';
+      img.decoding = 'async';
+      pic.appendChild(img);
+      fig.appendChild(pic);
+      sheetThumbs.appendChild(fig);
+    });
+    sheetThumbs.hidden = sheetThumbs.childElementCount === 0;
   }
 
   function showSheet(el) {
@@ -377,20 +522,23 @@
     var title = el.getAttribute('data-parent-title') || '';
     if (!href || !title) {
       sheet.hidden = true;
-      lightbox.classList.remove('has-sheet', 'is-sheet-open');
+      lightbox.classList.remove('has-sheet', 'is-sheet-open', 'is-sheet-commit');
+      if (sheetLink) delete sheetLink.dataset.label;
       setSheetOpen(false);
       return;
     }
     var kind = el.getAttribute('data-parent-kind') || 'Series';
-    var summary = el.getAttribute('data-parent-summary') || '';
     sheet.hidden = false;
     lightbox.classList.add('has-sheet');
-    sheetTitle.textContent = title;
-    sheetKind.textContent = kind;
-    sheetSummary.textContent = summary;
-    sheetSummary.style.display = summary ? '' : 'none';
+    if (sheetTitle) sheetTitle.textContent = title;
+    if (sheetKind) sheetKind.textContent = kind;
     sheetLink.href = href;
     sheetLink.textContent = 'Open ' + kind.toLowerCase();
+    delete sheetLink.dataset.label;
+    renderSheetThumbs(el.getAttribute('data-parent-thumbs'));
+    if (sheetHandle) {
+      sheetHandle.setAttribute('aria-label', 'Open ' + kind.toLowerCase() + ' ' + title);
+    }
     setSheetOpen(false);
   }
 
@@ -450,11 +598,12 @@
   }
 
   function closeLightbox() {
-    lightbox.classList.remove('is-open', 'has-sheet', 'is-sheet-open');
+    lightbox.classList.remove('is-open', 'has-sheet', 'is-sheet-open', 'is-sheet-commit');
     lightbox.setAttribute('aria-hidden', 'true');
     document.body.style.overflow = '';
     lightboxImg.src = '';
     resetZoom();
+    sheetDrag.active = false;
     setSheetOpen(false);
     if (sheet) sheet.hidden = true;
   }
@@ -533,6 +682,16 @@
         zoom.x = pan.zoomX + (e.clientX - pan.x);
         zoom.y = pan.zoomY + (e.clientY - pan.y);
         applyZoom();
+        return;
+      }
+      if (pts.length === 1 && zoom.scale <= 1.02 && !didPinch && sheet && !sheet.hidden) {
+        var rec = pointers[e.pointerId];
+        var dx = e.clientX - rec.startX;
+        var dy = e.clientY - rec.startY;
+        if (!sheetDrag.active && Math.abs(dy) > 12 && Math.abs(dy) > Math.abs(dx) * 1.15) {
+          beginSheetDrag(rec.startY, true);
+        }
+        if (sheetDrag.active && sheetDrag.fromStage) moveSheetDrag(e.clientY);
       }
     });
 
@@ -546,6 +705,11 @@
         pan.zoomX = zoom.x;
         pan.zoomY = zoom.y;
         pinch.dist = 0;
+      }
+      if (sheetDrag.active && sheetDrag.fromStage && remaining.length === 0) {
+        endSheetDrag();
+        if (remaining.length === 0) didPinch = false;
+        return;
       }
       if (remaining.length === 0 && rec && zoom.scale <= 1.02 && !didPinch) {
         var dx = e.clientX - rec.startX;
@@ -571,56 +735,65 @@
 
   function bindSheetDrag() {
     if (!sheet || !sheetHandle) return;
-    var peek = sheet.querySelector('.lightbox-sheet-peek');
+
+    function eventY(e) {
+      return e.clientY != null ? e.clientY : (e.touches && e.touches[0] ? e.touches[0].clientY : null);
+    }
 
     function onDown(e) {
-      if (window.matchMedia('(min-width: 800px)').matches) return;
-      sheetDrag.active = true;
-      sheetDrag.startY = e.clientY || (e.touches && e.touches[0].clientY) || 0;
-      sheetDrag.lastY = sheetDrag.startY;
-      sheet.classList.add('is-dragging');
+      if (isDesktopSheet()) return;
+      if (e.target.closest && e.target.closest('.lightbox-sheet-thumbs, .lightbox-sheet-link')) return;
+      var y = eventY(e);
+      if (y == null) return;
+      beginSheetDrag(y, false);
+      if (e.pointerId != null && sheet.setPointerCapture) {
+        try { sheet.setPointerCapture(e.pointerId); } catch (err) {}
+      }
     }
     function onMove(e) {
-      if (!sheetDrag.active) return;
-      var y = e.clientY || (e.touches && e.touches[0].clientY);
+      if (!sheetDrag.active || sheetDrag.fromStage) return;
+      var y = eventY(e);
       if (y == null) return;
-      sheetDrag.lastY = y;
-      var dy = y - sheetDrag.startY;
-      var collapsed = sheet.offsetHeight - 88;
-      var base = sheetOpen ? 0 : collapsed;
-      var next = Math.min(collapsed, Math.max(0, base + dy));
-      sheet.style.transform = 'translateY(' + next + 'px)';
+      moveSheetDrag(y);
     }
     function onUp() {
-      if (!sheetDrag.active) return;
-      sheetDrag.active = false;
-      sheet.classList.remove('is-dragging');
-      sheet.style.transform = '';
-      var dy = sheetDrag.lastY - sheetDrag.startY;
-      if (dy < -48) setSheetOpen(true);
-      else if (dy > 48) setSheetOpen(false);
+      if (!sheetDrag.active || sheetDrag.fromStage) return;
+      endSheetDrag();
     }
 
-    sheetHandle.addEventListener('pointerdown', onDown);
-    if (peek) peek.addEventListener('pointerdown', onDown);
+    sheet.addEventListener('pointerdown', onDown);
     window.addEventListener('pointermove', onMove);
     window.addEventListener('pointerup', onUp);
     window.addEventListener('pointercancel', onUp);
 
     function toggleOrIgnore(e) {
-      if (window.matchMedia('(min-width: 800px)').matches) return;
+      if (isDesktopSheet()) return;
       if (Math.abs(sheetDrag.lastY - sheetDrag.startY) > 12) return;
       e.preventDefault();
       setSheetOpen(!sheetOpen);
     }
     sheetHandle.addEventListener('click', toggleOrIgnore);
-    if (peek) peek.addEventListener('click', toggleOrIgnore);
   }
   bindSheetDrag();
 
   document.addEventListener('keydown', function (e) {
     if (!lightbox.classList.contains('is-open')) return;
-    if (e.key === 'Escape') closeLightbox();
+    if (e.key === 'Escape') {
+      if (sheetOpen) setSheetOpen(false);
+      else closeLightbox();
+      return;
+    }
+    if (e.key === 'ArrowUp' && sheet && !sheet.hidden) {
+      e.preventDefault();
+      if (!sheetOpen) setSheetOpen(true);
+      else commitNavigate();
+      return;
+    }
+    if (e.key === 'ArrowDown' && sheetOpen) {
+      e.preventDefault();
+      setSheetOpen(false);
+      return;
+    }
     if (e.key === 'ArrowLeft') step(-1);
     if (e.key === 'ArrowRight') step(1);
     if (e.key === '+' || e.key === '=') zoomAt(window.innerWidth / 2, window.innerHeight / 2, zoom.scale * 1.2);

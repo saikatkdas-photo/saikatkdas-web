@@ -8,7 +8,8 @@
     "dev": "node scripts/build.js && node scripts/dev-server.js",
     "serve": "node scripts/dev-server.js",
     "new-project": "node scripts/new-project.js",
-    "import-photos": "node scripts/import-photos.js"
+    "import-photos": "node scripts/import-photos.js",
+    "thumbs": "node scripts/import-photos.js --ensure-thumbs"
   },
   "repository": {
     "type": "git",
