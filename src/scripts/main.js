@@ -212,132 +212,164 @@
     }, true);
   }
 
-  /* ---------------- Timeline: horizontal newest-first, swipe up/RTL goes back --- */
+  /* ---------------- Timeline: transform pan, newest first ------------------- */
   var timelineStage = document.querySelector('[data-timeline-sticky]');
   var timelineTrack = document.querySelector('[data-timeline-track]');
-  if (timelineTrack) {
+  var timelineRail = document.querySelector('[data-timeline-rail]');
+  if (timelineTrack && timelineRail) {
     var tlCards = Array.prototype.slice.call(timelineTrack.querySelectorAll('[data-timeline-card]'));
     var tlSlots = Array.prototype.slice.call(timelineTrack.querySelectorAll('[data-timeline-slot]'));
-    var tlTick = false;
-    var tlDrag = { active: false, moved: false, startX: 0, startY: 0, startScroll: 0, pointerId: null };
-
-    var tlTouched = false;
+    var tlX = 0;
+    var tlVel = 0;
+    var tlQueued = 0;
+    var tlCoasting = false;
+    var tlDrag = {
+      active: false,
+      moved: false,
+      startX: 0,
+      startY: 0,
+      lastX: 0,
+      lastY: 0,
+      lastT: 0,
+      pointerId: null
+    };
 
     function tlSmooth(x) {
       x = Math.min(1, Math.max(0, x));
       return x * x * (3 - 2 * x);
     }
 
-    function centerTimelineSlot(slot, instant) {
-      if (!slot) return;
-      var box = timelineTrack.getBoundingClientRect();
-      var cx = box.left + box.width / 2;
-      var r = slot.getBoundingClientRect();
-      var target = timelineTrack.scrollLeft + (r.left + r.width / 2) - cx;
-      if (instant) timelineTrack.scrollLeft = target;
-      else timelineTrack.scrollTo({ left: target, behavior: reducedMotion ? 'auto' : 'smooth' });
+    function timelineMax() {
+      return Math.max(0, timelineRail.scrollWidth - timelineTrack.clientWidth);
+    }
+
+    function clampTimelineX(next) {
+      var max = timelineMax();
+      if (next < 0) return 0;
+      if (next > max) return max;
+      return next;
     }
 
     function updateTimelineFocus() {
       if (reducedMotion || !tlCards.length) return;
       var box = timelineTrack.getBoundingClientRect();
       var cx = box.left + box.width / 2;
-      var range = Math.max(180, box.width * 0.58);
+      var range = Math.max(120, box.width * 0.52);
       for (var i = 0; i < tlCards.length; i += 1) {
         var card = tlCards[i];
-        var slot = card.parentElement;
+        var slot = card.closest('[data-timeline-slot]') || card.parentElement;
         var rect = slot.getBoundingClientRect();
-        var cardCx = rect.left + rect.width / 2;
-        var t = tlSmooth(1 - Math.abs(cardCx - cx) / range);
-        var scale = 0.8 + 0.2 * t;
-        card.style.transform = 'scale(' + scale.toFixed(4) + ')';
-        card.style.opacity = (0.7 + 0.3 * t).toFixed(3);
+        var t = tlSmooth(1 - Math.abs(rect.left + rect.width / 2 - cx) / range);
+        card.style.transform = 'scale(' + (0.86 + 0.14 * t).toFixed(4) + ')';
+        card.style.opacity = (0.78 + 0.22 * t).toFixed(3);
       }
     }
 
-    function onTimelineScroll() {
-      if (tlTick) return;
-      tlTick = true;
-      requestAnimationFrame(function () {
-        updateTimelineFocus();
-        tlTick = false;
-      });
+    function paintTimeline() {
+      tlQueued = 0;
+      if (tlCoasting && !tlDrag.active) {
+        tlX = clampTimelineX(tlX + tlVel);
+        tlVel *= 0.962;
+        var max = timelineMax();
+        if (tlX <= 0.2 || tlX >= max - 0.2 || Math.abs(tlVel) < 0.06) {
+          tlCoasting = false;
+          tlVel = 0;
+          tlX = clampTimelineX(tlX);
+        }
+      }
+      timelineRail.style.transform = 'translate3d(' + (-tlX).toFixed(2) + 'px,0,0)';
+      updateTimelineFocus();
+      if (tlCoasting && !tlDrag.active) {
+        tlQueued = window.requestAnimationFrame(paintTimeline);
+      }
     }
 
-    function timelineAtStart() {
-      if (!tlSlots[0]) return timelineTrack.scrollLeft <= 2;
-      var box = timelineTrack.getBoundingClientRect();
-      var r = tlSlots[0].getBoundingClientRect();
-      return (r.left + r.width / 2) >= (box.left + box.width / 2) - 10;
-    }
-    function timelineAtEnd() {
-      if (!tlSlots.length) return true;
-      var last = tlSlots[tlSlots.length - 1];
-      var box = timelineTrack.getBoundingClientRect();
-      var r = last.getBoundingClientRect();
-      return (r.left + r.width / 2) <= (box.left + box.width / 2) + 10;
+    function queueTimelinePaint() {
+      if (!tlQueued) tlQueued = window.requestAnimationFrame(paintTimeline);
     }
 
-    var wheelSnapTimer = 0;
+    function stopTimelineCoast() {
+      tlCoasting = false;
+      tlVel = 0;
+    }
+
+    function setTimelineX(next) {
+      tlX = clampTimelineX(next);
+      queueTimelinePaint();
+    }
+
+    function centerTimelineSlot(slot) {
+      if (!slot) return;
+      var box = timelineTrack.getBoundingClientRect();
+      var cx = box.left + box.width / 2;
+      var r = slot.getBoundingClientRect();
+      setTimelineX(tlX + (r.left + r.width / 2) - cx);
+    }
+
+    function timelineAtStart() { return tlX <= 0.5; }
+    function timelineAtEnd() { return tlX >= timelineMax() - 0.5; }
+
     var wheelTarget = timelineStage || timelineTrack;
     wheelTarget.addEventListener('wheel', function (e) {
       var delta = e.deltaY + e.deltaX;
+      if (e.deltaMode === 1) delta *= 12;
+      if (e.deltaMode === 2) delta *= timelineTrack.clientHeight;
       if (!delta) return;
       if (delta < 0 && timelineAtStart()) return;
       if (delta > 0 && timelineAtEnd()) return;
-      tlTouched = true;
       e.preventDefault();
-      timelineTrack.style.scrollSnapType = 'none';
-      timelineTrack.scrollLeft += delta;
-      window.clearTimeout(wheelSnapTimer);
-      wheelSnapTimer = window.setTimeout(function () {
-        timelineTrack.style.scrollSnapType = '';
-        if (tlSlots.length) centerTimelineSlot(nearestTimelineSlot(), reducedMotion);
-      }, 90);
+      stopTimelineCoast();
+      setTimelineX(tlX + delta);
     }, { passive: false });
-
-    timelineTrack.addEventListener('scroll', onTimelineScroll, { passive: true });
 
     timelineTrack.addEventListener('pointerdown', function (e) {
       if (e.pointerType === 'mouse' && e.button !== 0) return;
+      stopTimelineCoast();
       tlDrag.active = true;
       tlDrag.moved = false;
-      tlTouched = true;
       tlDrag.startX = e.clientX;
       tlDrag.startY = e.clientY;
-      tlDrag.startScroll = timelineTrack.scrollLeft;
+      tlDrag.lastX = e.clientX;
+      tlDrag.lastY = e.clientY;
+      tlDrag.lastT = performance.now();
       tlDrag.pointerId = e.pointerId;
-      timelineTrack.style.scrollSnapType = 'none';
+      tlVel = 0;
       try { timelineTrack.setPointerCapture(e.pointerId); } catch (err) {}
     });
     timelineTrack.addEventListener('pointermove', function (e) {
       if (!tlDrag.active) return;
-      var dx = tlDrag.startX - e.clientX;
-      var dy = tlDrag.startY - e.clientY;
-      if (Math.abs(dx) + Math.abs(dy) > 5) tlDrag.moved = true;
-      timelineTrack.scrollLeft = tlDrag.startScroll + dx + dy;
-    });
-    function nearestTimelineSlot() {
-      var box = timelineTrack.getBoundingClientRect();
-      var cx = box.left + box.width / 2;
-      var nearest = tlSlots[0];
-      var best = Infinity;
-      for (var i = 0; i < tlSlots.length; i += 1) {
-        var r = tlSlots[i].getBoundingClientRect();
-        var d = Math.abs(r.left + r.width / 2 - cx);
-        if (d < best) { best = d; nearest = tlSlots[i]; }
+      if (e.cancelable) e.preventDefault();
+      var now = performance.now();
+      var dt = Math.max(4, now - tlDrag.lastT);
+      var d = (tlDrag.lastX - e.clientX) + (tlDrag.lastY - e.clientY);
+      if (Math.abs(e.clientX - tlDrag.startX) + Math.abs(e.clientY - tlDrag.startY) > 1.5) {
+        tlDrag.moved = true;
       }
-      return nearest;
-    }
-
+      tlX = clampTimelineX(tlX + d);
+      var inst = d * (16.67 / dt);
+      tlVel = tlVel * 0.42 + inst * 0.58;
+      tlDrag.lastX = e.clientX;
+      tlDrag.lastY = e.clientY;
+      tlDrag.lastT = now;
+      queueTimelinePaint();
+    }, { passive: false });
     function endTimelineDrag(e) {
       if (!tlDrag.active) return;
       tlDrag.active = false;
-      timelineTrack.style.scrollSnapType = '';
       if (e && tlDrag.pointerId != null) {
         try { timelineTrack.releasePointerCapture(tlDrag.pointerId); } catch (err) {}
       }
-      if (tlSlots.length) centerTimelineSlot(nearestTimelineSlot(), reducedMotion);
+      if (performance.now() - tlDrag.lastT > 80) tlVel = 0;
+      if (reducedMotion) {
+        tlVel = 0;
+        return;
+      }
+      if (Math.abs(tlVel) > 0.12) {
+        tlCoasting = true;
+        queueTimelinePaint();
+      } else {
+        tlVel = 0;
+      }
     }
     timelineTrack.addEventListener('pointerup', endTimelineDrag);
     timelineTrack.addEventListener('pointercancel', endTimelineDrag);
@@ -347,36 +379,38 @@
     }, true);
 
     timelineTrack.addEventListener('keydown', function (e) {
-      var slotW = tlSlots[0] ? tlSlots[0].offsetWidth : 280;
+      var step = Math.max(96, timelineTrack.clientWidth * 0.38);
       if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
         e.preventDefault();
-        timelineTrack.scrollBy({ left: slotW * 0.9, behavior: reducedMotion ? 'auto' : 'smooth' });
+        stopTimelineCoast();
+        setTimelineX(tlX + step);
       } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
         e.preventDefault();
-        timelineTrack.scrollBy({ left: -slotW * 0.9, behavior: reducedMotion ? 'auto' : 'smooth' });
+        stopTimelineCoast();
+        setTimelineX(tlX - step);
       } else if (e.key === 'Home') {
         e.preventDefault();
-        timelineTrack.scrollTo({ left: 0, behavior: reducedMotion ? 'auto' : 'smooth' });
+        stopTimelineCoast();
+        setTimelineX(0);
       } else if (e.key === 'End') {
         e.preventDefault();
-        timelineTrack.scrollTo({ left: timelineTrack.scrollWidth, behavior: reducedMotion ? 'auto' : 'smooth' });
+        stopTimelineCoast();
+        setTimelineX(timelineMax());
       }
     });
 
     if (typeof ResizeObserver !== 'undefined') {
-      new ResizeObserver(onTimelineScroll).observe(timelineTrack);
+      new ResizeObserver(function () {
+        tlX = clampTimelineX(tlX);
+        queueTimelinePaint();
+      }).observe(timelineTrack);
     }
     timelineTrack.querySelectorAll('img').forEach(function (img) {
-      if (!img.complete) img.addEventListener('load', onTimelineScroll);
+      if (!img.complete) img.addEventListener('load', function () { queueTimelinePaint(); });
     });
-    window.setTimeout(function () {
-      if (!tlTouched) centerTimelineSlot(tlSlots[0], true);
-      updateTimelineFocus();
-    }, 40);
-    window.setTimeout(function () {
-      if (!tlTouched) centerTimelineSlot(tlSlots[0], true);
-      updateTimelineFocus();
-    }, 400);
+    window.requestAnimationFrame(function () {
+      centerTimelineSlot(tlSlots[0]);
+    });
   }
 
   /* ---------------- Scroll reveal ---------------- */

@@ -14,9 +14,17 @@ function cardShape(image) {
   return { ratio, shape };
 }
 
+function shortCameraName(camera) {
+  const raw = String(camera || '').replace(/\s+/g, ' ').trim();
+  if (!raw) return '';
+  const stripped = raw.replace(/^.*?(?:LTD\.|INC\.|CORP\.|GMBH)\s*/i, '').trim();
+  const gr = stripped.match(/RICOH\s+GR.+/i);
+  if (gr) return gr[0].trim();
+  return stripped || raw;
+}
+
 function renderYearMark(item) {
   return `<div class="timeline-mark" aria-hidden="true">
-    <span class="timeline-mark-spacer"></span>
     <span class="timeline-mark-body">
       <span class="timeline-mark-year">${escapeHtml(item.label)}</span>
       <span class="timeline-mark-stem"></span>
@@ -31,7 +39,10 @@ function renderCard(item, index) {
   const series = item.series || '';
   const when = whenLabel(item);
   const highlight = item.highlight;
-  const labelBits = [series, when].filter(Boolean);
+  const caption = String(image.caption || '').trim();
+  const camera = shortCameraName(image.camera);
+  const story = String(image.story || '').trim();
+  const labelBits = [caption, series, when, camera].filter(Boolean);
   const aria = `Open ${labelBits.join(', ') || 'image'}`;
   const loading = index < 3 ? 'eager' : 'lazy';
   const fetchpriority = index === 0 ? 'high' : undefined;
@@ -47,15 +58,20 @@ function renderCard(item, index) {
     aria-label="${escapeHtml(aria)}"
     ${lightboxTriggerAttrs(image, { includeSheet: true })}
   >
-    <div class="timeline-card" data-timeline-card>
-      <figcaption class="timeline-card-title">
+    <div class="timeline-card">
+      <div class="timeline-card-title">
         <span class="timeline-card-when">${escapeHtml(when)}</span>
         ${series ? `<span class="timeline-card-series">${escapeHtml(series)}</span>` : ''}
-      </figcaption>
-      <div class="timeline-card-media">
+      </div>
+      <div class="timeline-card-media" data-timeline-card>
         ${highlight ? '<span class="timeline-star" aria-hidden="true">(*)</span>' : ''}
         <div class="frame">${renderPicture(image, { sizes: '(min-width: 800px) 42vw, 78vw', loading, fetchpriority })}</div>
       </div>
+      <figcaption class="timeline-card-meta">
+        ${caption ? `<span class="timeline-card-caption">${escapeHtml(caption)}</span>` : ''}
+        ${camera ? `<span class="timeline-card-camera">${escapeHtml(camera)}</span>` : ''}
+        ${story ? `<p class="timeline-card-story">${escapeHtml(story)}</p>` : ''}
+      </figcaption>
     </div>
   </figure>`;
 }
@@ -73,14 +89,16 @@ export function renderTimeline(sequence = []) {
         <span class="timeline-count">(${total})</span>
       </header>
       <div class="timeline-track" data-timeline-track tabindex="-1" aria-label="Photo timeline, newest first">
-        <div class="timeline-spacer" aria-hidden="true"></div>
-        ${sequence.map((item) => {
-          if (item.type === 'year') return renderYearMark(item);
-          const html = renderCard(item, imageIndex);
-          imageIndex += 1;
-          return html;
-        }).join('\n')}
-        <div class="timeline-spacer" aria-hidden="true"></div>
+        <div class="timeline-rail" data-timeline-rail>
+          <div class="timeline-spacer" aria-hidden="true"></div>
+          ${sequence.map((item) => {
+            if (item.type === 'year') return renderYearMark(item);
+            const html = renderCard(item, imageIndex);
+            imageIndex += 1;
+            return html;
+          }).join('\n')}
+          <div class="timeline-spacer" aria-hidden="true"></div>
+        </div>
       </div>
     </div>
   </div>`;
