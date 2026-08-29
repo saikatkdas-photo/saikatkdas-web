@@ -3,6 +3,12 @@
 
   var reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
+  if (document.documentElement.classList.contains('from-sheet')) {
+    window.setTimeout(function () {
+      document.documentElement.classList.remove('from-sheet');
+    }, 900);
+  }
+
   /* ---------------- Welcome intro (homepage reload) ---------------- */
   var intro = document.querySelector('[data-intro]');
   var introCount = document.querySelector('[data-intro-count]');
@@ -290,6 +296,9 @@
   if (!lightbox) return;
 
   var lightboxImg = lightbox.querySelector('[data-lightbox-img]');
+  var lightboxImgPrev = lightbox.querySelector('[data-lightbox-img-prev]');
+  var lightboxImgNext = lightbox.querySelector('[data-lightbox-img-next]');
+  var track = lightbox.querySelector('[data-lightbox-track]');
   var lightboxCaption = lightbox.querySelector('[data-lightbox-caption]');
   var lightboxInfo = lightbox.querySelector('[data-lightbox-info]');
   var lightboxStory = lightbox.querySelector('[data-lightbox-story]');
@@ -333,6 +342,68 @@
     startT: 0
   };
   var SHEET_COMMIT = 72;
+  var slideBusy = false;
+  var expanding = false;
+  var imageSwipe = {
+    active: false,
+    startX: 0,
+    x: 0,
+    lastX: 0,
+    lastT: 0,
+    startT: 0
+  };
+
+  function escText(value) {
+    return String(value || '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  }
+
+  function slideSrc(el) {
+    if (!el) return '';
+    return el.getAttribute('data-full') || el.getAttribute('data-lightbox-trigger') || '';
+  }
+
+  function neighborIndex(delta) {
+    var list = groups[activeGroup];
+    if (!list || !list.length) return 0;
+    return (activeIndex + delta + list.length) % list.length;
+  }
+
+  function stageWidth() {
+    return stage ? stage.clientWidth : 0;
+  }
+
+  function setTrackX(dx, snapping) {
+    if (!track) return;
+    var w = stageWidth();
+    track.classList.toggle('is-snapping', Boolean(snapping));
+    track.style.transform = 'translate3d(' + (-w + dx) + 'px,0,0)';
+  }
+
+  function restTrack(snapping) {
+    setTrackX(0, snapping);
+  }
+
+  function fillNeighbor(img, index) {
+    if (!img || !activeGroup) return;
+    var list = groups[activeGroup];
+    if (!list || list.length < 2) {
+      img.removeAttribute('src');
+      img.alt = '';
+      return;
+    }
+    var el = list[index];
+    img.src = slideSrc(el);
+    img.alt = el.getAttribute('data-alt') || '';
+  }
+
+  function fillNeighbors() {
+    fillNeighbor(lightboxImgPrev, neighborIndex(-1));
+    fillNeighbor(lightboxImgNext, neighborIndex(1));
+  }
 
   function applyZoom() {
     lightboxImg.style.transform = 'translate(' + zoom.x + 'px,' + zoom.y + 'px) scale(' + zoom.scale + ')';
@@ -453,10 +524,83 @@
   }
 
   function commitNavigate() {
-    if (!sheetLink) return;
+    if (!sheetLink || expanding) return;
     var href = sheetLink.getAttribute('href');
     if (!href || href === '#') return;
-    window.location.href = href;
+    expanding = true;
+
+    if (reducedMotion) {
+      window.location.href = href;
+      return;
+    }
+
+    try { sessionStorage.setItem('skd-from-sheet', '1'); } catch (err) {}
+
+    var rect = sheet.getBoundingClientRect();
+    var srcBox = sheetTitle ? sheetTitle.getBoundingClientRect() : rect;
+    var title = (sheetTitle && sheetTitle.textContent) || '';
+    var kind = (sheetKind && sheetKind.textContent) || 'Series';
+    var radius = isDesktopSheet() ? '20px' : '22px 22px 0 0';
+    var vw = window.innerWidth;
+    var vh = window.innerHeight;
+    var top = Math.max(0, rect.top);
+    var right = Math.max(0, vw - rect.right);
+    var bottom = Math.max(0, vh - rect.bottom);
+    var left = Math.max(0, rect.left);
+    var clip = 'inset(' + top + 'px ' + right + 'px ' + bottom + 'px ' + left + 'px round ' + radius + ')';
+
+    var overlay = document.createElement('div');
+    overlay.className = 'sheet-expand';
+    overlay.setAttribute('aria-hidden', 'true');
+    overlay.style.visibility = 'hidden';
+    overlay.style.clipPath = clip;
+    overlay.style.webkitClipPath = clip;
+    overlay.innerHTML = '<section class="sheet-expand-hero wrap">' +
+      '<p class="label label-paren">' + escText(kind) + '</p>' +
+      '<h1 class="detail-title sheet-expand-title">' + escText(title) + '</h1>' +
+      '</section>';
+
+    if (sheetThumbs && !sheetThumbs.hidden && sheetThumbs.childElementCount) {
+      var thumbs = sheetThumbs.cloneNode(true);
+      thumbs.className = 'sheet-expand-thumbs';
+      thumbs.removeAttribute('data-sheet-thumbs');
+      var tr = sheetThumbs.getBoundingClientRect();
+      thumbs.style.left = tr.left + 'px';
+      thumbs.style.top = tr.top + 'px';
+      thumbs.style.width = tr.width + 'px';
+      overlay.appendChild(thumbs);
+    }
+
+    document.body.appendChild(overlay);
+    lightbox.classList.add('is-expanding');
+    sheet.style.opacity = '0';
+
+    var destTitle = overlay.querySelector('.sheet-expand-title');
+    if (destTitle) {
+      destTitle.style.transition = 'none';
+      var destBox = destTitle.getBoundingClientRect();
+      var sx = destBox.width ? srcBox.width / destBox.width : 1;
+      var sy = destBox.height ? srcBox.height / destBox.height : 1;
+      destTitle.style.transform = 'translate(' + (srcBox.left - destBox.left) + 'px,' + (srcBox.top - destBox.top) + 'px) scale(' + sx + ', ' + sy + ')';
+      destTitle.offsetWidth;
+      destTitle.style.transition = '';
+    }
+
+    overlay.style.visibility = '';
+    overlay.style.transition = 'clip-path 780ms cubic-bezier(0.16, 1, 0.3, 1)';
+
+    window.requestAnimationFrame(function () {
+      window.requestAnimationFrame(function () {
+        overlay.classList.add('is-on');
+        overlay.style.clipPath = 'inset(0 round 0px)';
+        overlay.style.webkitClipPath = 'inset(0 round 0px)';
+        if (destTitle) destTitle.style.transform = 'none';
+      });
+    });
+
+    window.setTimeout(function () {
+      window.location.href = href;
+    }, 820);
   }
 
   function endSheetDrag() {
@@ -471,7 +615,7 @@
     sheetDrag.fromStage = false;
 
     if (y < -SHEET_COMMIT * 0.5 || (sheetOpen && (dy < -SHEET_COMMIT || flick < -0.55))) {
-      setSheetOpen(true);
+      applySheetY(y, true);
       commitNavigate();
       return;
     }
@@ -540,15 +684,26 @@
       sheetHandle.setAttribute('aria-label', 'Open ' + kind.toLowerCase() + ' ' + title);
     }
     setSheetOpen(false);
+    if (href && sheet.dataset.prefetched !== href) {
+      sheet.dataset.prefetched = href;
+      try {
+        var prefetch = document.createElement('link');
+        prefetch.rel = 'prefetch';
+        prefetch.href = href;
+        document.head.appendChild(prefetch);
+      } catch (err) {}
+    }
   }
 
   function renderSlide() {
     if (!activeGroup) return;
     var el = groups[activeGroup][activeIndex];
-    var full = el.getAttribute('data-full') || el.getAttribute('data-lightbox-trigger');
+    var full = slideSrc(el);
     resetZoom();
     lightboxImg.src = full;
     lightboxImg.alt = el.getAttribute('data-alt') || '';
+    fillNeighbors();
+    if (!imageSwipe.active && !slideBusy) restTrack(false);
 
     var caption = el.getAttribute('data-caption') || '';
     lightboxCaption.textContent = caption;
@@ -590,29 +745,117 @@
   function openLightbox(group, index) {
     activeGroup = group;
     activeIndex = index;
+    slideBusy = false;
+    imageSwipe.active = false;
     renderSlide();
     lightbox.classList.add('is-open');
+    lightbox.classList.remove('is-swiping', 'is-expanding');
+    restTrack(false);
+    window.requestAnimationFrame(function () { restTrack(false); });
     lightbox.setAttribute('aria-hidden', 'false');
     document.body.style.overflow = 'hidden';
     closeBtn.focus();
   }
 
   function closeLightbox() {
-    lightbox.classList.remove('is-open', 'has-sheet', 'is-sheet-open', 'is-sheet-commit');
+    lightbox.classList.remove('is-open', 'has-sheet', 'is-sheet-open', 'is-sheet-commit', 'is-swiping', 'is-expanding');
     lightbox.setAttribute('aria-hidden', 'true');
     document.body.style.overflow = '';
     lightboxImg.src = '';
+    if (lightboxImgPrev) lightboxImgPrev.removeAttribute('src');
+    if (lightboxImgNext) lightboxImgNext.removeAttribute('src');
     resetZoom();
+    restTrack(false);
+    slideBusy = false;
+    imageSwipe.active = false;
+    expanding = false;
     sheetDrag.active = false;
     setSheetOpen(false);
-    if (sheet) sheet.hidden = true;
+    if (sheet) {
+      sheet.hidden = true;
+      sheet.style.opacity = '';
+    }
   }
 
   function step(delta) {
-    if (!activeGroup) return;
+    if (!activeGroup || slideBusy || expanding) return;
     var list = groups[activeGroup];
-    activeIndex = (activeIndex + delta + list.length) % list.length;
-    renderSlide();
+    if (!list || list.length < 2) return;
+
+    var fromX = imageSwipe.active ? imageSwipe.x : 0;
+    imageSwipe.active = false;
+
+    if (reducedMotion) {
+      activeIndex = neighborIndex(delta);
+      lightbox.classList.remove('is-swiping');
+      renderSlide();
+      restTrack(false);
+      return;
+    }
+
+    slideBusy = true;
+    resetZoom();
+    lightbox.classList.add('is-swiping');
+    var w = stageWidth();
+    var targetX = -delta * w;
+    setTrackX(fromX, false);
+
+    var settled = false;
+    function settle() {
+      if (settled) return;
+      settled = true;
+      if (track) track.removeEventListener('transitionend', onEnd);
+      activeIndex = neighborIndex(delta);
+      if (track) track.classList.remove('is-snapping');
+      lightboxImg.src = slideSrc(groups[activeGroup][activeIndex]);
+      lightboxImg.alt = groups[activeGroup][activeIndex].getAttribute('data-alt') || '';
+      restTrack(false);
+      slideBusy = false;
+      imageSwipe.x = 0;
+      lightbox.classList.remove('is-swiping');
+      renderSlide();
+    }
+    function onEnd(e) {
+      if (e && e.target !== track) return;
+      settle();
+    }
+
+    window.requestAnimationFrame(function () {
+      setTrackX(targetX, true);
+    });
+
+    if (Math.abs(fromX - targetX) < 8) {
+      window.setTimeout(settle, 24);
+      return;
+    }
+    if (track) track.addEventListener('transitionend', onEnd);
+    window.setTimeout(settle, 640);
+  }
+
+  function endImageSwipe() {
+    if (!imageSwipe.active) return;
+    var dx = imageSwipe.x;
+    var elapsed = Math.max(16, performance.now() - imageSwipe.startT);
+    var flick = dx / elapsed;
+    var w = stageWidth();
+    var threshold = Math.min(64, Math.max(40, w * 0.16));
+
+    if (dx < -threshold || flick < -0.5) {
+      step(1);
+      return;
+    }
+    if (dx > threshold || flick > 0.5) {
+      step(-1);
+      return;
+    }
+
+    imageSwipe.active = false;
+    imageSwipe.x = 0;
+    lightbox.classList.remove('is-swiping');
+    restTrack(true);
+    window.setTimeout(function () {
+      if (track) track.classList.remove('is-snapping');
+    }, 540);
   }
 
   Object.keys(groups).forEach(function (group) {
@@ -633,6 +876,17 @@
   closeBtn.addEventListener('click', closeLightbox);
   prevBtn.addEventListener('click', function () { step(-1); });
   nextBtn.addEventListener('click', function () { step(1); });
+  if (sheetLink) {
+    sheetLink.addEventListener('click', function (e) {
+      e.preventDefault();
+      commitNavigate();
+    });
+  }
+
+  window.addEventListener('resize', function () {
+    if (!lightbox.classList.contains('is-open') || slideBusy || imageSwipe.active) return;
+    restTrack(false);
+  });
 
   if (stage) {
     stage.addEventListener('wheel', function (e) {
@@ -650,7 +904,7 @@
 
     stage.addEventListener('pointerdown', function (e) {
       if (e.pointerType === 'mouse' && e.button !== 0) return;
-      stage.setPointerCapture(e.pointerId);
+      try { stage.setPointerCapture(e.pointerId); } catch (err) {}
       pointers[e.pointerId] = { x: e.clientX, y: e.clientY, startX: e.clientX, startY: e.clientY };
       var pts = pointerList();
       if (pts.length === 2) {
@@ -684,12 +938,33 @@
         applyZoom();
         return;
       }
-      if (pts.length === 1 && zoom.scale <= 1.02 && !didPinch && sheet && !sheet.hidden) {
+      if (pts.length === 1 && zoom.scale <= 1.02 && !didPinch) {
         var rec = pointers[e.pointerId];
         var dx = e.clientX - rec.startX;
         var dy = e.clientY - rec.startY;
-        if (!sheetDrag.active && Math.abs(dy) > 12 && Math.abs(dy) > Math.abs(dx) * 1.15) {
-          beginSheetDrag(rec.startY, true);
+        var multi = activeGroup && groups[activeGroup] && groups[activeGroup].length > 1;
+
+        if (!sheetDrag.active && !imageSwipe.active && !slideBusy) {
+          if (multi && Math.abs(dx) > 12 && Math.abs(dx) > Math.abs(dy) * 1.15) {
+            imageSwipe.active = true;
+            imageSwipe.startX = rec.startX;
+            imageSwipe.x = dx;
+            imageSwipe.lastX = e.clientX;
+            imageSwipe.startT = performance.now();
+            imageSwipe.lastT = imageSwipe.startT;
+            lightbox.classList.add('is-swiping');
+            resetZoom();
+          } else if (sheet && !sheet.hidden && Math.abs(dy) > 12 && Math.abs(dy) > Math.abs(dx) * 1.15) {
+            beginSheetDrag(rec.startY, true);
+          }
+        }
+
+        if (imageSwipe.active) {
+          imageSwipe.x = e.clientX - imageSwipe.startX;
+          imageSwipe.lastX = e.clientX;
+          imageSwipe.lastT = performance.now();
+          setTrackX(imageSwipe.x, false);
+          return;
         }
         if (sheetDrag.active && sheetDrag.fromStage) moveSheetDrag(e.clientY);
       }
@@ -711,12 +986,15 @@
         if (remaining.length === 0) didPinch = false;
         return;
       }
+      if (imageSwipe.active && remaining.length === 0) {
+        endImageSwipe();
+        didPinch = false;
+        return;
+      }
       if (remaining.length === 0 && rec && zoom.scale <= 1.02 && !didPinch) {
         var dx = e.clientX - rec.startX;
         var dy = e.clientY - rec.startY;
-        if (Math.abs(dx) > 56 && Math.abs(dx) > Math.abs(dy) * 1.2) {
-          step(dx < 0 ? 1 : -1);
-        } else if (e.pointerType !== 'mouse') {
+        if (e.pointerType !== 'mouse') {
           var now = Date.now();
           if (now - lastTap < 280 && Math.abs(dx) < 12 && Math.abs(dy) < 12) {
             zoomAt(e.clientX, e.clientY, 2.4);

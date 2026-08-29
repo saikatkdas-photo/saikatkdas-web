@@ -547,6 +547,7 @@ body.intro-done .highlight-item .frame {
   transition: opacity var(--dur-med) var(--ease);
 }
 .lightbox.is-open { opacity: 1; pointer-events: auto; }
+.lightbox.is-expanding { pointer-events: none; }
 
 .lightbox-top,
 .lightbox-bar {
@@ -590,22 +591,44 @@ body.intro-done .highlight-item .frame {
 .lightbox-next:active { transform: scale(0.98); }
 
 .lightbox-stage {
+  position: relative;
   flex: 1 1 auto;
   min-height: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
   overflow: hidden;
   touch-action: none;
   cursor: zoom-in;
 }
 .lightbox-stage.is-zoomed { cursor: grab; }
 .lightbox-stage.is-zoomed:active { cursor: grabbing; }
-.lightbox-stage img {
+.lightbox-track {
+  display: flex;
+  align-items: stretch;
+  height: 100%;
+  width: 300%;
+  min-height: 0;
+  will-change: transform;
+  transform: translate3d(-33.333%, 0, 0);
+}
+.lightbox-track.is-snapping {
+  transition: transform 520ms var(--ease);
+}
+.lightbox-slide {
+  flex: 0 0 33.333%;
+  width: 33.333%;
+  height: 100%;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+.lightbox-slide img:not([src]),
+.lightbox-slide img[src=""] { visibility: hidden; }
+.lightbox-slide img {
+  width: 100%;
+  height: 100%;
   max-width: 100%;
   max-height: 100%;
-  width: auto;
-  height: auto;
   object-fit: contain;
   transform-origin: center center;
   user-select: none;
@@ -621,10 +644,19 @@ body.intro-done .highlight-item .frame {
   display: flex;
   flex-direction: column;
   gap: var(--sp-2);
+  transition: opacity 280ms var(--ease);
 }
+.lightbox.is-swiping .lightbox-meta { opacity: 0.28; }
 .lightbox.has-sheet .lightbox-meta { padding-bottom: 2.75rem; }
 .lightbox.has-sheet.is-sheet-open .lightbox-meta { padding-bottom: min(42vh, 20rem); }
 .lightbox.is-sheet-commit .lightbox-stage { opacity: 0.55; }
+.lightbox.is-expanding .lightbox-top,
+.lightbox.is-expanding .lightbox-bar,
+.lightbox.is-expanding .lightbox-stage,
+.lightbox.is-expanding .lightbox-meta {
+  opacity: 0;
+  transition: opacity 320ms var(--ease);
+}
 .lightbox-caption {
   color: var(--on-dark);
   font-size: 0.95rem;
@@ -768,6 +800,78 @@ body.intro-done .highlight-item .frame {
 
 @media (prefers-reduced-transparency: reduce) {
   .lightbox { background: #17160f; }
+}
+
+/* Half-card → collection page: expanding surface + shared title */
+.sheet-expand {
+  position: fixed;
+  inset: 0;
+  z-index: 400;
+  pointer-events: none;
+  background: var(--bg);
+  color: var(--ink);
+  overflow: hidden;
+  clip-path: inset(0);
+}
+.sheet-expand-hero {
+  padding-top: calc(var(--header-h) + var(--sp-6));
+}
+.sheet-expand-hero .label {
+  opacity: 0;
+  transition: opacity 420ms var(--ease) 180ms;
+}
+.sheet-expand.is-on .sheet-expand-hero .label { opacity: 1; }
+.sheet-expand-title {
+  margin-top: 1rem;
+  transform-origin: 0 0;
+  will-change: transform;
+  transition: transform 780ms var(--ease);
+}
+.sheet-expand-thumbs {
+  position: absolute;
+  display: flex;
+  gap: 0.4rem;
+  overflow: hidden;
+  margin: 0;
+  pointer-events: none;
+  transition: opacity 320ms var(--ease), transform 780ms var(--ease);
+}
+.sheet-expand.is-on .sheet-expand-thumbs {
+  opacity: 0;
+  transform: translate3d(0, -28px, 0);
+}
+.sheet-expand-thumbs img {
+  width: 4.35rem;
+  height: 5.25rem;
+  object-fit: cover;
+  border-radius: var(--radius);
+}
+
+html.from-sheet .detail-title.reveal,
+html.from-sheet .detail-title.reveal.is-in {
+  opacity: 1;
+  transform: none;
+  transition: none;
+}
+html.from-sheet .site-header {
+  animation: sheetArriveFade 520ms var(--ease) both;
+}
+html.from-sheet .detail-cover.reveal {
+  transition-delay: 60ms;
+}
+
+@keyframes sheetArriveFade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lightbox-track.is-snapping { transition: none; }
+  .sheet-expand,
+  .sheet-expand-title,
+  .sheet-expand-thumbs,
+  .sheet-expand-hero .label { transition: none; }
+  html.from-sheet .site-header { animation: none; }
 }
 
 /* ---------------- Timeline ---------------- */

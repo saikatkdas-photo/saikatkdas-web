@@ -147,7 +147,11 @@ export function renderLightboxMarkup() {
       <button type="button" class="lightbox-close" data-lightbox-close>Close</button>
     </div>
     <div class="lightbox-stage" data-lightbox-stage>
-      <img data-lightbox-img src="" alt="">
+      <div class="lightbox-track" data-lightbox-track>
+        <div class="lightbox-slide" data-lightbox-slide="prev"><img data-lightbox-img-prev alt="" aria-hidden="true"></div>
+        <div class="lightbox-slide" data-lightbox-slide="current"><img data-lightbox-img src="" alt=""></div>
+        <div class="lightbox-slide" data-lightbox-slide="next"><img data-lightbox-img-next alt="" aria-hidden="true"></div>
+      </div>
     </div>
     <div class="lightbox-bar">
       <button type="button" class="lightbox-prev" data-lightbox-prev aria-label="Previous image">Prev</button>
@@ -240,6 +244,20 @@ export function renderLayout({ title, description, activeKey, site, owner, nav, 
   ${google}
   <link rel="stylesheet" href="/styles/main.css${v}">
   <style id="site-tokens">${tokenCss}</style>
+  <script>
+    (function () {
+      try {
+        if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+          sessionStorage.removeItem('skd-from-sheet');
+          return;
+        }
+        if (sessionStorage.getItem('skd-from-sheet')) {
+          document.documentElement.classList.add('from-sheet');
+          sessionStorage.removeItem('skd-from-sheet');
+        }
+      } catch (err) {}
+    })();
+  </script>
 </head>
 <body class="${bodyClass}${showIntro ? ' has-intro' : ''}">
   ${showIntro ? renderHomeIntro(owner, introCanvasSrc, introConfig) : ''}
