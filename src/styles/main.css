@@ -593,7 +593,9 @@ body.intro-done .highlight-item .frame {
   position: absolute;
   left: var(--gutter);
   right: var(--gutter);
-  bottom: var(--sp-6);
+  bottom: auto;
+  top: 50%;
+  transform: translateY(-50%);
   display: flex;
   flex-direction: column;
   gap: 0.35rem;
@@ -605,6 +607,7 @@ body.intro-done .highlight-item .frame {
   font-size: clamp(2.75rem, 8vw, 6.5rem);
   letter-spacing: -0.03em;
   line-height: 0.9;
+  text-shadow: 0 2px 28px rgba(17, 16, 12, 0.42);
 }
 .work-preview-kind {
   font-family: var(--font-mono);
@@ -616,10 +619,30 @@ body.intro-done .highlight-item .frame {
 .work-preview::after {
   content: '';
   position: absolute;
-  inset: auto 0 0;
-  height: 42%;
-  background: linear-gradient(180deg, transparent, rgba(17, 16, 12, 0.62));
+  inset: 0;
+  background: linear-gradient(
+    180deg,
+    rgba(17, 16, 12, 0.12) 0%,
+    rgba(17, 16, 12, 0.38) 46%,
+    rgba(17, 16, 12, 0.38) 58%,
+    rgba(17, 16, 12, 0.16) 100%
+  );
   pointer-events: none;
+}
+
+@media (max-width: 799px) {
+  /* Visible band sits under the sticky header so the full frame can fit */
+  .work-preview-media {
+    top: var(--header-h);
+    bottom: env(safe-area-inset-bottom, 0px);
+  }
+  .work-preview-media img {
+    object-fit: contain;
+    object-position: center;
+  }
+  .work-preview-caption {
+    top: calc(var(--header-h) + (100% - var(--header-h)) * 0.5);
+  }
 }
 
 /* ---------------- Grids ---------------- */
@@ -1357,8 +1380,9 @@ body.is-timeline .site-header {
    p1 staggered SKD enters in the middle of the right half
    dock: stack travels to the left and lines up (S / K / D)
    p2 canvas fills the viewport (letters stay docked)
+   (*) starts mid-right, then rises to the top-right as SKD docks
    p3 photo fades in, still zoomed in
-   p4 photo zooms out to fit the device
+   p4 photo zooms out to fit the device (contain on phones)
    p5 shutters wipe the photo (SKD stays on top)
    p6 S/D clip-expand into Saikat / Das
    p7 name slides out; overlay leaves
@@ -1533,7 +1557,7 @@ body.intro-done .site-footer { opacity: 1; transition: opacity 800ms var(--ease)
   position: absolute;
   z-index: 5;
   right: var(--gutter);
-  top: var(--sp-4);
+  top: 50%;
   font-family: var(--font-intro);
   font-weight: var(--font-intro-weight);
   font-size: clamp(1.8rem, 4.6vw, 3.75rem);
@@ -1541,18 +1565,28 @@ body.intro-done .site-footer { opacity: 1; transition: opacity 800ms var(--ease)
   line-height: 1;
   color: var(--on-dark-soft);
   opacity: 0;
-  transform: translateY(28px);
+  transform: translateY(-50%);
   transition:
     opacity 500ms ease,
-    transform 800ms cubic-bezier(0.16, 1, 0.3, 1),
+    top 1100ms cubic-bezier(0.22, 1, 0.36, 1),
+    transform 1100ms cubic-bezier(0.22, 1, 0.36, 1),
     color 420ms ease;
 }
-.intro.intro-p1 .intro-star,
+.intro.intro-p1 .intro-star {
+  opacity: 1;
+  top: 50%;
+  transform: translateY(-50%);
+}
+.intro.intro-dock .intro-star,
 .intro.intro-p2 .intro-star,
 .intro.intro-p3 .intro-star,
 .intro.intro-p4 .intro-star,
 .intro.intro-p5 .intro-star,
-.intro.intro-p6 .intro-star { opacity: 1; transform: none; }
+.intro.intro-p6 .intro-star {
+  opacity: 1;
+  top: var(--sp-4);
+  transform: none;
+}
 .intro.intro-p7 .intro-star { opacity: 0; }
 .intro.is-light .intro-star { color: var(--ink-soft); }
 
@@ -1611,8 +1645,9 @@ body.intro-done .site-footer { opacity: 1; transition: opacity 800ms var(--ease)
   opacity: 1;
   transform: scale(var(--intro-zoom-end));
 }
-@media (orientation: landscape) and (max-height: 540px) {
-  /* Contain from the start so zoom-out is a true scale-to-fit, not an object-fit snap */
+/* Phones, and short landscape: contain from the start so zoom-out is a true
+   scale-to-fit. Desktop stays cover. */
+@media (max-width: 799px), (orientation: landscape) and (max-height: 540px) {
   .intro-photo {
     object-fit: contain;
     min-width: 0;

@@ -101,8 +101,8 @@ function renderSelectedStrip(nav, flags, controls) {
 }
 
 export function renderHome(data) {
-  const { owner, highlights, series, projects, places, about, introHero, flags, controls, nav } = data;
-  const workCollections = [...(places || []), ...series, ...projects];
+  const { owner, highlights, series, projects, about, introHero, flags, controls, nav } = data;
+  const workCollections = [...(series || []), ...(projects || [])];
   const stagger = controls?.motion?.highlight_stagger || 'jitter';
 
   return `
