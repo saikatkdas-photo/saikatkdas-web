@@ -147,6 +147,8 @@ async function main() {
       'caption:',
       `tags: ${yamlList(tags)}`,
       `highlight: ${isHighlight}`,
+      'cover: false',
+      'story:',
       order != null ? `order: ${order}` : null,
       values.link ? `link: ${yamlString(values.link)}` : null,
       exif.camera ? `camera: ${yamlString(exif.camera)}` : null,

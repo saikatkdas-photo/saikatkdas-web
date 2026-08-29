@@ -4,6 +4,7 @@ import matter from 'gray-matter';
 import { renderMarkdown } from './markdown.js';
 import { slugify, titleFromSlug } from './slug.js';
 import { loadControls } from './controls.js';
+import { assignSiteCovers, buildTimelineYears, compareLatest } from './covers.js';
 
 const IMAGE_EXTENSIONS = new Set(['.jpg', '.jpeg', '.png', '.webp']);
 
@@ -48,6 +49,32 @@ function toArray(value) {
   return Array.isArray(value) ? value : [value];
 }
 
+function isCoverFlag(value) {
+  return value === true || value === 'true' || value === 'yes' || value === 1;
+}
+
+function storyFromSidecar(data, content) {
+  if (data.story != null && String(data.story).trim()) return String(data.story).trim();
+  return String(content || '').replace(/<!--[\s\S]*?-->/g, '').trim();
+}
+
+async function walkImageFiles(dir, base = dir) {
+  if (!(await pathExists(dir))) return [];
+  const entries = await fs.readdir(dir, { withFileTypes: true });
+  const files = [];
+  for (const entry of entries) {
+    if (entry.name.startsWith('.')) continue;
+    const full = path.join(dir, entry.name);
+    if (entry.isDirectory()) {
+      files.push(...await walkImageFiles(full, base));
+    } else if (IMAGE_EXTENSIONS.has(path.extname(entry.name).toLowerCase())) {
+      files.push(path.relative(base, full));
+    }
+  }
+  files.sort(naturalCompare);
+  return files;
+}
+
 /**
  * Load one image's sidecar metadata + merge in tags cascaded down from its
  * parent collection (e.g. every image in series/kolkata inherits "kolkata").
@@ -55,23 +82,28 @@ function toArray(value) {
 async function loadImage(collectionDir, collectionTags, collectionHref, imageFile, publicSrcPrefix) {
   const ext = path.extname(imageFile);
   const baseName = path.basename(imageFile, ext);
-  const mdPath = path.join(collectionDir, `${baseName}.md`);
+  const mdPath = path.join(collectionDir, path.dirname(imageFile), `${baseName}.md`);
   const { data, content } = await readMatter(mdPath);
 
   const ownTags = toArray(data.tags).map((t) => String(t).trim().toLowerCase()).filter(Boolean);
-  const tags = [...new Set([...collectionTags, ...ownTags])];
+  const folder = path.dirname(imageFile);
+  const folderSlug = folder && folder !== '.' ? slugify(folder) : '';
+  const folderTag = folderSlug && /[a-z]/.test(folderSlug) ? folderSlug : '';
+  const tags = [...new Set([...collectionTags, ...ownTags, folderTag].filter(Boolean))];
 
   return {
     file: imageFile,
     slug: slugify(baseName),
-    src: `${publicSrcPrefix}/${imageFile}`.replace(/\/{2,}/g, '/'),
+    src: `${publicSrcPrefix}/${imageFile}`.replace(/\\/g, '/').replace(/\/{2,}/g, '/'),
     sourcePath: path.join(collectionDir, imageFile),
     title: data.title || '',
     alt: data.alt || data.title || titleFromSlug(baseName),
     caption: data.caption || '',
+    story: storyFromSidecar(data, content),
     location: data.location || '',
     tags,
     highlight: Boolean(data.highlight),
+    cover: isCoverFlag(data.cover),
     order: typeof data.order === 'number' ? data.order : Number.parseFloat(baseName),
     link: data.link || '',
     camera: data.camera || '',
@@ -105,8 +137,12 @@ async function loadCollection(rootDir, typeDir, type, slug) {
   );
   images.sort(byOrderThenTitle);
 
-  const coverFile = data.cover && imageFiles.includes(data.cover) ? data.cover : imageFiles[0];
-  const cover = images.find((img) => img.file === coverFile) || images[0] || null;
+  // Backward compatible: readme `cover: 04.jpg` counts as cover: true on that image.
+  const readmeCover = typeof data.cover === 'string' ? data.cover.trim() : '';
+  if (readmeCover) {
+    const marked = images.find((img) => img.file === readmeCover);
+    if (marked) marked.cover = true;
+  }
 
   return {
     type,
@@ -119,7 +155,7 @@ async function loadCollection(rootDir, typeDir, type, slug) {
     year: data.year || '',
     tags: collectionTags,
     order: typeof data.order === 'number' ? data.order : null,
-    cover,
+    cover: null,
     images,
     html: renderMarkdown(content),
     href,
@@ -130,7 +166,34 @@ async function loadCollectionsOfType(rootDir, typeDir, type) {
   const slugs = await listSubdirectories(path.join(rootDir, typeDir));
   const collections = await Promise.all(slugs.map((slug) => loadCollection(rootDir, typeDir, type, slug)));
   collections.sort(byOrderThenTitle);
-  return collections;
+  return collections.filter((c) => c.images.length > 0);
+}
+
+async function loadUntitled(rootDir) {
+  const photosDir = path.join(rootDir, 'photos');
+  const imageFiles = await walkImageFiles(photosDir);
+  const href = '/untitled/';
+  const images = await Promise.all(
+    imageFiles.map((file) => loadImage(photosDir, [], href, file, '/photos'))
+  );
+  images.sort(compareLatest);
+
+  return {
+    type: 'untitled',
+    slug: 'untitled',
+    title: 'Untitled',
+    summary: 'Standalone frames, outside of a series.',
+    client: '',
+    industry: '',
+    services: [],
+    year: '',
+    tags: [],
+    order: null,
+    cover: null,
+    images,
+    html: '',
+    href,
+  };
 }
 
 async function loadGear(rootDir) {
@@ -186,6 +249,7 @@ function buildThemes(allCollections) {
     slug: slugify(tag),
     title: titleFromSlug(tag),
     href: `/themes/${slugify(tag)}/`,
+    cover: null,
     items: items.sort((a, b) => byOrderThenTitle(a.image, b.image)),
   }));
 
@@ -217,17 +281,29 @@ export async function loadSite(rootDir) {
 
   const about = await readMatter(path.join(rootDir, 'about.md'));
 
-  const [projects, series, photos, journal, gear] = await Promise.all([
+  const [projects, series, untitled, journal, gear] = await Promise.all([
     loadCollectionsOfType(rootDir, 'projects', 'project'),
     loadCollectionsOfType(rootDir, 'series', 'series'),
-    loadCollectionsOfType(rootDir, 'photos', 'photo'),
+    loadUntitled(rootDir),
     loadCollectionsOfType(rootDir, 'journal', 'journal'),
     loadGear(rootDir),
   ]);
 
-  const allGalleryCollections = [...projects, ...series, ...photos];
+  const allGalleryCollections = [...projects, ...series, untitled].filter((c) => c.images?.length);
   const themes = buildThemes(allGalleryCollections);
   const highlights = collectHighlights(allGalleryCollections);
+
+  const allGalleryImages = allGalleryCollections.flatMap((c) => c.images);
+  const timelineYears = buildTimelineYears(allGalleryImages);
+
+  const { warnings, log } = assignSiteCovers({
+    projects,
+    series,
+    untitled,
+    themes,
+    timelineYears,
+    journal,
+  });
 
   const sectionOn = (key) => controls.sections?.[key] !== false;
 
@@ -239,14 +315,20 @@ export async function loadSite(rootDir) {
     about: { data: about.data, html: renderMarkdown(about.content) },
     projects,
     series,
-    photos,
+    untitled,
+    photos: untitled,
     journal,
     gear,
     themes,
     highlights,
+    timelineYears,
+    coverWarnings: warnings,
+    coverLog: log,
     flags: {
       hasProjects: projects.length > 0 && sectionOn('projects'),
       hasSeries: series.length > 0 && sectionOn('series'),
+      hasUntitled: untitled.images.length > 0 && sectionOn('untitled'),
+      hasTimeline: allGalleryImages.length > 0 && sectionOn('timeline'),
       hasThemes: themes.length > 0 && sectionOn('themes'),
       hasGear: gear.length > 0 && sectionOn('gear'),
       hasJournal: journal.length > 0 && sectionOn('journal'),

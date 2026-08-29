@@ -12,10 +12,10 @@ Live at **[saikatkdas.com](https://saikatkdas.com)** (once DNS is configured —
 There's no CMS. The site *is* the file structure:
 
 ```
-photos/<slug>/            → standalone highlight photos (rarely used — most photos live in a series)
+photos/                   → Untitled: standalone frames (any nesting)
 projects/<slug>/          → client / commissioned work
-  readme.md                 → title, client, industry, services, year, tags, cover
-  1.jpg, 1.md                → an image + its metadata (alt, caption, EXIF, tags, highlight)
+  readme.md                 → title, client, industry, services, year, tags
+  1.jpg, 1.md                → an image + its metadata (alt, caption, story, EXIF, tags, highlight, cover)
 series/<slug>/            → personal, ongoing bodies of work (e.g. "Kolkata", "Japan")
   readme.md, 1.jpg, 1.md    → same shape as projects/, minus client metadata
 gear/<slug>.md            → one file per camera/lens, with an optional same-folder photo
@@ -36,9 +36,13 @@ field on every image. Tag a photo `monochrome`, and it shows up on
 series' `readme.md`) cascade down to every image inside it, so you only have
 to tag the series once with `kolkata` and every photo in it inherits that tag.
 
-**Highlights** (the homepage hero gallery) are just images with
-`highlight: true` in their own `.md` file. They link to their parent
-project/series by default, or wherever `link:` points if you set it.
+**Highlights** (the homepage selected gallery) are images with
+`highlight: true` in their own `.md` file. Clicking one opens it fullscreen;
+a half-card at the bottom leads into the parent series or project.
+
+**Untitled** (`/untitled/`) is every frame in `photos/`. **Timeline**
+(`/timeline/`) groups every gallery image by year, with a hero frame then
+a denser grid.
 
 ## Content field reference
 
@@ -53,7 +57,6 @@ industry: ""      # projects only
 services: []      # projects only
 year: 2026
 tags: ["kolkata"] # cascades to every image in this folder
-cover: "04.jpg"   # filename of the cover image; defaults to the first image
 order: 1          # controls sort order in listings; omit to sort by title
 ---
 Markdown body — the write-up shown on the detail page.
@@ -65,8 +68,10 @@ Markdown body — the write-up shown on the detail page.
 ---
 alt: "Accessible description"
 caption: "Short caption shown under the thumbnail"
+story: "Optional background story, shown in focused viewing below EXIF."
 tags: ["monochrome"]     # merged with the collection's cascaded tags
 highlight: true           # feature this photo on the homepage
+cover: true               # series/project cover. If several are true, build warns and uses the latest.
 order: 3                   # controls highlight + gallery order
 link: "/series/kolkata/"  # optional override for where a highlight links
 camera: "RICOH GR IIIx"   # usually auto-filled by import-photos.js
@@ -77,8 +82,19 @@ focalLength: ""
 iso:
 takenAt: ""
 ---
-Optional longer caption / story, as Markdown.
 ```
+
+Cover selection (computed at build, unique across sections where possible):
+
+1. `cover: true` (multiple in one series: warning, latest wins)
+2. latest `highlight: true`
+3. longest `story`
+4. non-empty `caption`
+5. latest frame (`takenAt`, then filename)
+
+If a later section would reuse a cover, it prefers another image. Themes fall back to a seeded random frame when nothing unique remains.
+
+TBD: series covers as a montage of the latest 2 and earliest 2 frames.
 
 ### Gear `<slug>.md`
 

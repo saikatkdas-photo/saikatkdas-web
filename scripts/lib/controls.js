@@ -57,6 +57,8 @@ export const CONTROL_DEFAULTS = {
     about: true,
     projects: true,
     series: true,
+    untitled: true,
+    timeline: true,
     themes: true,
     gear: true,
     journal: true,

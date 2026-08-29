@@ -65,7 +65,6 @@ async function main() {
     type === 'project' && services ? `services: [${services.split(',').map((s) => `"${s.trim()}"`).join(', ')}]` : null,
     year ? `year: ${year}` : null,
     tags ? `tags: [${tags.split(',').map((t) => `"${slugify(t.trim())}"`).join(', ')}]` : null,
-    'cover:',
     '---',
     '',
     body || `<!-- TODO(saikat): write the story behind "${title}" here. -->`,

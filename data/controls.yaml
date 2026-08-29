@@ -66,6 +66,8 @@ sections:
   # These also hide when the matching content folder is empty
   projects: true
   series: true
+  untitled: true
+  timeline: true
   themes: true
   gear: true
   journal: true

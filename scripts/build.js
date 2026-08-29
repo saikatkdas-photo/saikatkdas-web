@@ -15,6 +15,8 @@ import { renderThemesIndex, renderThemeDetail } from './templates/themes.js';
 import { renderAbout } from './templates/about.js';
 import { renderGear } from './templates/gear.js';
 import { renderJournalIndex, renderJournalDetail } from './templates/journal.js';
+import { renderUntitled } from './templates/untitled.js';
+import { renderTimeline } from './templates/timeline.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..');
@@ -35,10 +37,13 @@ async function copyFile(src, relDestPath) {
 
 function collectAllImages(data) {
   const images = [];
-  for (const list of [data.projects, data.series, data.photos, data.journal]) {
+  for (const list of [data.projects, data.series, data.journal]) {
     for (const collection of list) {
       for (const image of collection.images) images.push(image);
     }
+  }
+  if (data.untitled?.images) {
+    for (const image of data.untitled.images) images.push(image);
   }
   for (const item of data.gear) {
     if (item.image) images.push(item.image);
@@ -182,6 +187,30 @@ async function buildThemes(data) {
   }
 }
 
+async function buildUntitled(data) {
+  if (!data.flags.hasUntitled) return;
+  const html = page(renderUntitled(data.untitled), {
+    title: `Untitled — ${data.owner.name}`,
+    description: 'Standalone frames, outside of a series.',
+    activeKey: 'untitled',
+    canonicalPath: '/untitled/',
+    data,
+  });
+  await writeFile('untitled/index.html', html);
+}
+
+async function buildTimeline(data) {
+  if (!data.flags.hasTimeline) return;
+  const html = page(renderTimeline(data.timelineYears), {
+    title: `Timeline — ${data.owner.name}`,
+    description: 'The work, year by year.',
+    activeKey: 'timeline',
+    canonicalPath: '/timeline/',
+    data,
+  });
+  await writeFile('timeline/index.html', html);
+}
+
 async function buildAbout(data) {
   const html = page(
     renderAbout({ about: data.about, owner: data.owner, portraitImage: data.aboutPortraitImage, flags: data.flags }),
@@ -282,6 +311,8 @@ async function writeHostingFiles(data) {
     urls.push('/themes/');
     data.themes.forEach((t) => urls.push(`/themes/${t.slug}/`));
   }
+  if (data.flags.hasUntitled) urls.push('/untitled/');
+  if (data.flags.hasTimeline) urls.push('/timeline/');
   if (data.flags.hasGear) urls.push('/gear/');
   if (data.flags.hasJournal) {
     urls.push('/journal/');
@@ -340,6 +371,8 @@ async function main() {
     description: 'Personal, ongoing bodies of work.',
   });
   await buildThemes(data);
+  await buildUntitled(data);
+  await buildTimeline(data);
   await buildAbout(data);
   await buildGear(data);
   await buildJournal(data);
@@ -348,8 +381,12 @@ async function main() {
   await writeHostingFiles(data);
 
   const ms = Date.now() - started;
+  if (data.coverWarnings?.length) {
+    for (const warning of data.coverWarnings) console.warn(`  ! ${warning}`);
+  }
+  console.log('  TBD: series covers as a montage of the latest 2 and earliest 2 frames.');
   console.log(`✓ Build complete in ${ms}ms → dist/`);
-  console.log(`  Projects: ${data.projects.length} · Series: ${data.series.length} · Themes: ${data.themes.length} · Gear: ${data.gear.length} · Journal: ${data.journal.length} · Highlights: ${data.highlights.length}`);
+  console.log(`  Projects: ${data.projects.length} · Series: ${data.series.length} · Untitled: ${data.untitled.images.length} · Timeline years: ${data.timelineYears.length} · Themes: ${data.themes.length} · Gear: ${data.gear.length} · Journal: ${data.journal.length} · Highlights: ${data.highlights.length}`);
 }
 
 main().catch((err) => {

@@ -1,6 +1,6 @@
 import { renderPicture, lightboxTriggerAttrs, escapeHtml } from './partials.js';
 
-function renderGalleryItem(image, groupSlug) {
+export function renderGalleryItem(image, groupSlug) {
   return `<figure class="gallery-item" data-lightbox-group="${groupSlug}" role="button" tabindex="0" aria-label="Open larger image${image.caption ? ': ' + escapeHtml(image.caption) : ''}" ${lightboxTriggerAttrs(image)}>
     <div class="frame">${renderPicture(image, { sizes: '(min-width: 800px) 32vw, 92vw' })}</div>
     ${image.caption ? `<figcaption class="gallery-caption">${escapeHtml(image.caption)}</figcaption>` : ''}

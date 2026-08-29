@@ -13,6 +13,8 @@ const NAV_FLAG_KEYS = {
   about: null,
   projects: 'hasProjects',
   series: 'hasSeries',
+  untitled: 'hasUntitled',
+  timeline: 'hasTimeline',
   themes: 'hasThemes',
   gear: 'hasGear',
   journal: 'hasJournal',
@@ -51,6 +53,7 @@ export function lightboxTriggerAttrs(image) {
     `data-full="${full}"`,
     `data-alt="${escapeHtml(image.alt)}"`,
     image.caption ? `data-caption="${escapeHtml(image.caption)}"` : '',
+    image.story ? `data-story="${escapeHtml(image.story)}"` : '',
     image.camera ? `data-camera="${escapeHtml(image.camera)}"` : '',
     image.lens ? `data-lens="${escapeHtml(image.lens)}"` : '',
     image.aperture ? `data-aperture="${escapeHtml(image.aperture)}"` : '',
@@ -103,16 +106,36 @@ export function renderFooter({ owner }) {
 
 export function renderLightboxMarkup() {
   return `<div class="lightbox" data-lightbox aria-hidden="true">
-    <button type="button" class="lightbox-close" data-lightbox-close>Close ✕</button>
-    <button type="button" class="lightbox-prev" data-lightbox-prev aria-label="Previous image">‹ Prev</button>
-    <figure class="lightbox-figure">
+    <div class="lightbox-top">
+      <span class="lightbox-counter" data-lightbox-counter></span>
+      <button type="button" class="lightbox-close" data-lightbox-close>Close</button>
+    </div>
+    <div class="lightbox-stage" data-lightbox-stage>
       <img data-lightbox-img src="" alt="">
-      <figcaption>
-        <p class="lightbox-caption" data-lightbox-caption></p>
-        <div class="lightbox-info" data-lightbox-info></div>
-      </figcaption>
-    </figure>
-    <button type="button" class="lightbox-next" data-lightbox-next aria-label="Next image">Next ›</button>
+    </div>
+    <div class="lightbox-bar">
+      <button type="button" class="lightbox-prev" data-lightbox-prev aria-label="Previous image">Prev</button>
+      <span class="lightbox-gap" aria-hidden="true"></span>
+      <button type="button" class="lightbox-next" data-lightbox-next aria-label="Next image">Next</button>
+    </div>
+    <div class="lightbox-meta">
+      <p class="lightbox-caption" data-lightbox-caption></p>
+      <div class="lightbox-info" data-lightbox-info></div>
+      <p class="lightbox-story" data-lightbox-story></p>
+    </div>
+    <aside class="lightbox-sheet" data-lightbox-sheet hidden>
+      <button type="button" class="lightbox-sheet-handle" data-sheet-handle aria-label="Open related series">
+        <span class="lightbox-sheet-knob"></span>
+      </button>
+      <div class="lightbox-sheet-peek">
+        <p class="lightbox-sheet-title" data-sheet-title></p>
+        <p class="lightbox-sheet-kind" data-sheet-kind></p>
+      </div>
+      <div class="lightbox-sheet-body">
+        <p class="lightbox-sheet-summary" data-sheet-summary></p>
+        <a class="btn lightbox-sheet-link" data-sheet-link href="#">Open series</a>
+      </div>
+    </aside>
   </div>`;
 }
 

@@ -1,4 +1,4 @@
-import { renderPicture, escapeHtml } from './partials.js';
+import { renderPicture, lightboxTriggerAttrs, escapeHtml } from './partials.js';
 
 function fracHash(seed) {
   const n = Math.sin(seed) * 43758.5453;
@@ -34,8 +34,15 @@ function highlightJitter(index, image) {
   return { shape, wVw, liftVh, align };
 }
 
+function parentKind(collection) {
+  if (!collection) return 'Series';
+  if (collection.type === 'project') return 'Project';
+  if (collection.type === 'untitled') return 'Untitled';
+  return 'Series';
+}
+
 function renderHighlightItem(highlight, index, stagger) {
-  const { image, title, href } = highlight;
+  const { image, title, href, collection } = highlight;
   const tagged = (image.tags || []).filter((t) => t !== title.toLowerCase());
   const first = tagged[0] || '';
   const subLabel = first ? first[0].toUpperCase() + first.slice(1) : '';
@@ -43,16 +50,19 @@ function renderHighlightItem(highlight, index, stagger) {
   const style = stagger === 'none'
     ? `--hi-i:${index}`
     : `--hi-i:${index}; --hi-w:${jitter.wVw}vw; --hi-lift:${jitter.liftVh}vh`;
-  return `<a class="highlight-item" href="${href}" data-shape="${jitter.shape}" data-align="${jitter.align}" style="${style}">
+  const kind = parentKind(collection);
+  const parentHref = collection?.href || href;
+  const parentTitle = collection?.title || title;
+  const parentSummary = collection?.summary || '';
+  return `<a class="highlight-item" href="${parentHref}" data-shape="${jitter.shape}" data-align="${jitter.align}" style="${style}" data-lightbox-group="highlights" ${lightboxTriggerAttrs(image)} data-parent-href="${escapeHtml(parentHref)}" data-parent-title="${escapeHtml(parentTitle)}" data-parent-kind="${escapeHtml(kind)}" data-parent-summary="${escapeHtml(parentSummary)}">
     <div class="frame">
       ${renderPicture(image, { sizes: '(min-width: 800px) 50vw, 92vw', loading: index === 0 ? 'eager' : 'lazy', fetchpriority: index === 0 ? 'high' : undefined })}
     </div>
     <div class="highlight-caption">
       <span>
         <span class="title">${escapeHtml(title)}</span><br>
-        <span class="meta">${escapeHtml(subLabel || 'Series')}</span>
+        <span class="meta">${escapeHtml(subLabel || kind)}</span>
       </span>
-      <span class="arrow" aria-hidden="true">↗</span>
     </div>
   </a>`;
 }

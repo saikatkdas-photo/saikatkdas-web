@@ -13,7 +13,7 @@ export function renderThemesIndex(themes) {
     <div class="grid">
       ${themes.map((theme) => `
       <a class="card" href="${theme.href}">
-        <div class="frame">${renderPicture(theme.items[0].image, { sizes: '(min-width: 800px) 30vw, 90vw' })}</div>
+        <div class="frame">${theme.cover ? renderPicture(theme.cover, { sizes: '(min-width: 800px) 30vw, 90vw' }) : renderPicture(theme.items[0]?.image, { sizes: '(min-width: 800px) 30vw, 90vw' })}</div>
         <div class="card-body">
           <div class="card-title">${escapeHtml(theme.title)}</div>
           <div class="card-meta">${theme.items.length} photo${theme.items.length === 1 ? '' : 's'}</div>

@@ -1,21 +1,22 @@
 # photos/
 
-Standalone highlight photos that don't belong to any project or series.
+Standalone frames that are not part of a project or series. They publish
+as the **Untitled** section (`/untitled/`).
 
-Each photo gets its own folder:
+Drop images anywhere under this folder (root or nested). Each image can
+have a sidecar `.md` with the same base name:
 
 ```
 photos/
-  <slug>/
-    1.jpg
-    1.md
+  01.jpg
+  01.md
+  Monochrome/
+    RM000146.jpg
 ```
 
-Every image needs a sidecar `.md` file with the same base name (see any
-example under `series/` for the metadata fields). Set `highlight: true`
-in an image's metadata to feature it in the homepage gallery.
+Sidecar fields match series images (`caption`, `story`, `highlight`,
+`cover`, EXIF, tags). Nested folder names that look like words (e.g.
+`Monochrome`) are added as tags.
 
-This folder is empty right now — all current photos live under `series/`
-(each is still eligible as a homepage highlight via its own metadata).
-Use `node scripts/import-photos.js` to add photos here, or drop them in
-by hand and run `npm run build`.
+Untitled photos are also eligible for homepage highlights, themes, and
+the timeline.
