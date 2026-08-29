@@ -33,8 +33,11 @@ a project, and "Projects" appears in the nav. Delete every gear entry, and
 **Themes are not folders.** They're computed automatically from the `tags:`
 field on every image. Tag a photo `monochrome`, and it shows up on
 `/themes/monochrome/` — no extra step. A collection's own `tags:` (e.g. a
-series' `readme.md`) cascade down to every image inside it, so you only have
-to tag the series once with `kolkata` and every photo in it inherits that tag.
+series' `readme.md`) cascade down to every image inside it.
+
+**Places are not folders either.** They're computed from the `place:` field on
+an image's sidecar. A photo only appears under `/places/` if that field is
+set — `place: kolkata` puts it on `/places/kolkata/`. Cities are not themes.
 
 **Highlights** (the homepage selected gallery) are images with
 `highlight: true` in their own `.md` file. Clicking one opens it fullscreen.
@@ -63,7 +66,7 @@ client: ""        # projects only
 industry: ""      # projects only
 services: []      # projects only
 year: 2026
-tags: ["kolkata"] # cascades to every image in this folder
+tags: ["market"] # cascades to every image in this folder
 order: 1          # controls sort order in listings; omit to sort by title
 ---
 Markdown body — the write-up shown on the detail page.
@@ -77,6 +80,7 @@ alt: "Accessible description"
 caption: "Short caption shown under the thumbnail"
 story: "Optional background story, shown in focused viewing below EXIF."
 tags: ["monochrome"]     # merged with the collection's cascaded tags
+place: kolkata            # optional; only placed photos appear under /places/
 highlight: true           # feature this photo on the homepage
 cover: true               # series/project cover. If several are true, build warns and uses the latest.
 order: 3                   # controls highlight + gallery order
@@ -124,7 +128,7 @@ npm run build            # generate the static site into dist/
 npm run dev               # build once, then serve dist/ at http://localhost:4173
 npm run serve              # just serve the existing dist/ (skip rebuild)
 npm run new-project        # interactive: scaffold a new projects/ or series/ folder + readme.md
-npm run import-photos -- --source "/path/to/photos" --dest series/kolkata
+npm run import-photos -- --source "/path/to/photos" --dest series/japan --place japan
 npm run merge-folders -- --dest series/mullick-ghat "series/Mullick Ghat"
 npm run thumbs            # write missing 320px thumbnails next to existing images
 ```
@@ -141,19 +145,22 @@ conversions occasionally need a manual nudge, so always skim the results).
 ```bash
 node scripts/import-photos.js \
   --source "/Volumes/One Touch/Photography/Ricoh/Best-2026/shortlist" \
-  --dest series/kolkata \
-  --tags kolkata \
+  --dest series/japan \
+  --place japan \
   --highlight
 ```
 
-Useful flags: `--tags a,b,c` (extra tags for every imported image),
+Useful flags: `--place kolkata` (sets the image `place:` field; required for
+`/places/`), `--tags a,b,c` (extra tags for every imported image — `kolkata`
+or `bangalore` in this list are promoted to `place` and stripped from tags),
 `--highlight` (mark all as homepage highlights), `--highlight-start N`
 (starting order number), `--link /some/path/` (override highlight link
 target), `--keep-names` (don't renumber sequentially), `--move` (move
 instead of copy), `--dry-run` (preview without writing anything),
 `--ensure-thumbs` (write missing thumbnails next to every existing image;
-no `--source` / `--dest` needed). Each import also writes a 320px
-`*.thumb.webp` / `*.thumb.jpg` beside the new file.
+no `--source` / `--dest` needed), `--promote-places` (one-time: copy
+`kolkata` / `bangalore` off `tags:` onto `place:`). Each import also writes
+a 320px `*.thumb.webp` / `*.thumb.jpg` beside the new file.
 
 ### `merge-folders.js`
 
@@ -238,13 +245,13 @@ leave it empty to skip that webfont request.
 ### Section flags
 
 `sections.intro`, `hero`, `selected`, `selected_strip`, `work_previews`,
-`about`, `projects`, `series`, `themes`, `gear`, `journal`. Set any of these
-to `false` to hide that block. Projects / series / themes / gear / journal
-also hide automatically when their content folder is empty.
+`about`, `projects`, `series`, `places`, `themes`, `gear`, `journal`. Set any of these
+to `false` to hide that block. Projects / series / places / themes / gear / journal
+also hide automatically when their content is empty.
 
 ### Other knobs
 
-- `selected_strip.items`: nav keys shown as the floating `series * themes * about` strip
+- `selected_strip.items`: nav keys shown as the floating `series * places * themes * about` strip
 - `motion.highlight_stagger`: `jitter` (default), `linear`, or `none`
 - `motion.honor_reduced`: skip the intro when the OS asks for reduced motion
 - `layout.highlight_track_min_height` / `selected_min_height`: Selected gallery height

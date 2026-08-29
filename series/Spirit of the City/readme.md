@@ -1,7 +1,6 @@
 ---
-title: "Bangalore"
-summary: "The city I actually live in now — still learning to see it the way I see Kolkata."
-tags: ["bangalore"]
+title: "Spirit of the City"
+summary: "Trying get closer to the soul of the place, really see."
 cover: "01.jpg"
 order: 2
 ---

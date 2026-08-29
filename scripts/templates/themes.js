@@ -7,7 +7,7 @@ export function renderThemesIndex(themes) {
       <h1 class="hero-heading">Themes</h1>
       <span class="hero-count">(${themes.length})</span>
     </div>
-    <p class="hero-sub">Cross-cutting threads pulled from image metadata — cities, colour treatment, and whatever else the work naturally sorts itself into.</p>
+    <p class="hero-sub">Cross-cutting threads pulled from image tags — colour treatment, subjects, and whatever else the work naturally sorts itself into.</p>
   </section>
   <section class="section wrap" style="padding-top: 0;">
     <div class="grid">

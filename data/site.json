@@ -17,6 +17,7 @@
     { "label": "Home", "href": "/", "key": "home" },
     { "label": "Projects", "href": "/projects/", "key": "projects" },
     { "label": "Series", "href": "/series/", "key": "series" },
+    { "label": "Places", "href": "/places/", "key": "places" },
     { "label": "Untitled", "href": "/untitled/", "key": "untitled" },
     { "label": "Timeline", "href": "/timeline/", "key": "timeline" },
     { "label": "Themes", "href": "/themes/", "key": "themes" },

@@ -1,7 +1,6 @@
 ---
-title: "Kolkata"
+title: "Mullick Ghat"
 summary: "My hometown, its colourful streets, and the moments that never make it to postcards."
-tags: ["kolkata"]
 cover: "04.jpg"
 order: 1
 ---

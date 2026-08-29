@@ -6,6 +6,7 @@ import { slugify, titleFromSlug } from './slug.js';
 import { loadControls } from './controls.js';
 import { assignSiteCovers, buildTimelineYears, buildTimelineSequence, compareLatest, pickPreviewImages } from './covers.js';
 import { isSourceImageFile } from './image.js';
+import { KNOWN_PLACES, normalizePlace } from './place.js';
 
 function naturalCompare(a, b) {
   return a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' });
@@ -76,7 +77,7 @@ async function walkImageFiles(dir, base = dir) {
 
 /**
  * Load one image's sidecar metadata + merge in tags cascaded down from its
- * parent collection (e.g. every image in series/kolkata inherits "kolkata").
+ * parent collection (e.g. every image in a market series inherits "market").
  */
 async function loadImage(collectionDir, collectionTags, collectionHref, imageFile, publicSrcPrefix) {
   const ext = path.extname(imageFile);
@@ -88,7 +89,8 @@ async function loadImage(collectionDir, collectionTags, collectionHref, imageFil
   const folder = path.dirname(imageFile);
   const folderSlug = folder && folder !== '.' ? slugify(folder) : '';
   const folderTag = folderSlug && /[a-z]/.test(folderSlug) ? folderSlug : '';
-  const tags = [...new Set([...collectionTags, ...ownTags, folderTag].filter(Boolean))];
+  const place = normalizePlace(data.place);
+  const tags = [...new Set([...collectionTags, ...ownTags, folderTag].filter((t) => t && t !== place && !KNOWN_PLACES.includes(t)))];
 
   return {
     file: imageFile,
@@ -100,6 +102,7 @@ async function loadImage(collectionDir, collectionTags, collectionHref, imageFil
     caption: data.caption || '',
     story: storyFromSidecar(data, content),
     location: data.location || '',
+    place,
     tags,
     highlight: Boolean(data.highlight),
     cover: isCoverFlag(data.cover),
@@ -232,11 +235,45 @@ async function loadGear(rootDir) {
   return items;
 }
 
+function placeRank(slug) {
+  const index = KNOWN_PLACES.indexOf(slug);
+  return index === -1 ? 99 : index;
+}
+
+function buildPlaces(allCollections) {
+  const placeMap = new Map();
+  for (const collection of allCollections) {
+    for (const image of collection.images) {
+      const place = normalizePlace(image.place);
+      if (!place) continue;
+      if (!placeMap.has(place)) placeMap.set(place, []);
+      placeMap.get(place).push({ image, collection });
+    }
+  }
+
+  const places = [...placeMap.entries()].map(([place, items]) => ({
+    type: 'place',
+    place,
+    slug: place,
+    title: titleFromSlug(place),
+    href: `/places/${place}/`,
+    cover: null,
+    items: items.sort((a, b) => byOrderThenTitle(a.image, b.image)),
+    images: items.map((item) => item.image),
+    year: '',
+    summary: '',
+  }));
+
+  places.sort((a, b) => placeRank(a.slug) - placeRank(b.slug) || naturalCompare(a.title, b.title));
+  return places;
+}
+
 function buildThemes(allCollections) {
   const themeMap = new Map();
   for (const collection of allCollections) {
     for (const image of collection.images) {
       for (const tag of image.tags) {
+        if (tag === image.place || KNOWN_PLACES.includes(tag)) continue;
         if (!themeMap.has(tag)) themeMap.set(tag, []);
         themeMap.get(tag).push({ image, collection });
       }
@@ -321,6 +358,7 @@ export async function loadSite(rootDir) {
   attachSheetMeta(allGalleryCollections);
   attachSheetMeta(journal.filter((post) => post.images?.length));
   const themes = buildThemes(allGalleryCollections);
+  const places = buildPlaces(allGalleryCollections);
   const highlights = collectHighlights(allGalleryCollections);
 
   const allGalleryImages = allGalleryCollections.flatMap((c) => c.images);
@@ -335,6 +373,7 @@ export async function loadSite(rootDir) {
     projects,
     series,
     untitled,
+    places,
     themes,
     journal,
   });
@@ -354,6 +393,7 @@ export async function loadSite(rootDir) {
     journal,
     gear,
     themes,
+    places,
     highlights,
     timelineYears,
     timelineSequence,
@@ -364,6 +404,7 @@ export async function loadSite(rootDir) {
       hasSeries: series.length > 0 && sectionOn('series'),
       hasUntitled: untitled.images.length > 0 && sectionOn('untitled'),
       hasTimeline: timelineImages.length > 0 && sectionOn('timeline'),
+      hasPlaces: places.length > 0 && sectionOn('places'),
       hasThemes: themes.length > 0 && sectionOn('themes'),
       hasGear: gear.length > 0 && sectionOn('gear'),
       hasJournal: journal.length > 0 && sectionOn('journal'),

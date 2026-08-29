@@ -68,6 +68,7 @@ sections:
   series: true
   untitled: true
   timeline: true
+  places: true
   themes: true
   gear: true
   journal: true
@@ -75,7 +76,7 @@ sections:
 selected_strip:
   enabled: true
   # Keys from data/site.json nav. Empty folders / false section flags drop out.
-  items: [series, themes, about]
+  items: [series, places, themes, about]
 
 motion:
   honor_reduced: true

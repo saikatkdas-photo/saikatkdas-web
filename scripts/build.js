@@ -12,6 +12,7 @@ import { renderIntroType } from './templates/introType.js';
 import { renderCollectionsIndex } from './templates/collectionsIndex.js';
 import { renderCollectionDetail } from './templates/collectionDetail.js';
 import { renderThemesIndex, renderThemeDetail } from './templates/themes.js';
+import { renderPlacesIndex, renderPlaceDetail } from './templates/places.js';
 import { renderAbout } from './templates/about.js';
 import { renderGear } from './templates/gear.js';
 import { renderJournalIndex, renderJournalDetail } from './templates/journal.js';
@@ -163,6 +164,30 @@ async function buildCollections(data, { list, typeDir, kindLabel, activeKey, tit
   }
 }
 
+async function buildPlaces(data) {
+  if (!data.places?.length) return;
+
+  const indexHtml = page(renderPlacesIndex(data.places), {
+    title: `Places — ${data.owner.name}`,
+    description: 'Cities and towns the work keeps returning to.',
+    activeKey: 'places',
+    canonicalPath: '/places/',
+    data,
+  });
+  await writeFile('places/index.html', indexHtml);
+
+  for (const place of data.places) {
+    const html = page(renderPlaceDetail(place), {
+      title: `${place.title} — Places — ${data.owner.name}`,
+      description: `Photos from ${place.title}.`,
+      activeKey: 'places',
+      canonicalPath: `/places/${place.slug}/`,
+      data,
+    });
+    await writeFile(`places/${place.slug}/index.html`, html);
+  }
+}
+
 async function buildThemes(data) {
   if (data.themes.length === 0) return;
 
@@ -308,6 +333,10 @@ async function writeHostingFiles(data) {
     urls.push('/series/');
     data.series.forEach((c) => urls.push(`/series/${c.slug}/`));
   }
+  if (data.flags.hasPlaces) {
+    urls.push('/places/');
+    data.places.forEach((p) => urls.push(`/places/${p.slug}/`));
+  }
   if (data.flags.hasThemes) {
     urls.push('/themes/');
     data.themes.forEach((t) => urls.push(`/themes/${t.slug}/`));
@@ -371,6 +400,7 @@ async function main() {
     title: 'Series',
     description: 'Personal, ongoing bodies of work.',
   });
+  await buildPlaces(data);
   await buildThemes(data);
   await buildUntitled(data);
   await buildTimeline(data);
@@ -387,7 +417,7 @@ async function main() {
   }
   console.log('  TBD: series covers as a montage of the latest 2 and earliest 2 frames.');
   console.log(`✓ Build complete in ${ms}ms → dist/`);
-  console.log(`  Projects: ${data.projects.length} · Series: ${data.series.length} · Untitled: ${data.untitled.images.length} · Timeline years: ${data.timelineYears.length} · Themes: ${data.themes.length} · Gear: ${data.gear.length} · Journal: ${data.journal.length} · Highlights: ${data.highlights.length}`);
+  console.log(`  Projects: ${data.projects.length} · Series: ${data.series.length} · Places: ${data.places.length} · Untitled: ${data.untitled.images.length} · Timeline years: ${data.timelineYears.length} · Themes: ${data.themes.length} · Gear: ${data.gear.length} · Journal: ${data.journal.length} · Highlights: ${data.highlights.length}`);
 }
 
 main().catch((err) => {

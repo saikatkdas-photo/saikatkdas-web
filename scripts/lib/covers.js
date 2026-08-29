@@ -123,7 +123,7 @@ export function pickCover(images, opts = {}) {
   return { cover, warning, reused: false };
 }
 
-export function assignSiteCovers({ projects = [], series = [], untitled = null, themes = [], journal = [] }) {
+export function assignSiteCovers({ projects = [], series = [], untitled = null, places = [], themes = [], journal = [] }) {
   const warnings = [];
   const used = new Set();
   const log = [];
@@ -153,6 +153,21 @@ export function assignSiteCovers({ projects = [], series = [], untitled = null, 
     if (cover) {
       used.add(imageKey(cover));
       log.push(`untitled → ${cover.file}${reused ? ' (reuse)' : ''}`);
+    }
+  }
+
+  for (const place of places) {
+    const images = (place.images || place.items?.map((item) => item.image) || []).filter(Boolean);
+    const { cover, reused } = pickCover(images, {
+      usedKeys: used,
+      allowRandomFallback: true,
+      seed: `place-${place.slug}`,
+      warnLabel: `place:${place.slug}`,
+    });
+    place.cover = cover;
+    if (cover) {
+      used.add(imageKey(cover));
+      log.push(`place:${place.slug} → ${cover.file}${reused ? ' (reuse)' : ''}`);
     }
   }
 

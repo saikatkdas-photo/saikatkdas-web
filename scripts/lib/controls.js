@@ -59,13 +59,14 @@ export const CONTROL_DEFAULTS = {
     series: true,
     untitled: true,
     timeline: true,
+    places: true,
     themes: true,
     gear: true,
     journal: true,
   },
   selected_strip: {
     enabled: true,
-    items: ['series', 'themes', 'about'],
+    items: ['series', 'places', 'themes', 'about'],
   },
   motion: {
     honor_reduced: true,

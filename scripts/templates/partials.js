@@ -13,6 +13,7 @@ const NAV_FLAG_KEYS = {
   about: null,
   projects: 'hasProjects',
   series: 'hasSeries',
+  places: 'hasPlaces',
   untitled: 'hasUntitled',
   timeline: 'hasTimeline',
   themes: 'hasThemes',

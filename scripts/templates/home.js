@@ -71,7 +71,7 @@ function renderHighlightItem(highlight, index, stagger) {
 }
 
 function renderWorkPreview(collection) {
-  const kind = collection.type === 'series' ? 'Series' : 'Project';
+  const kind = collection.type === 'place' ? 'Place' : collection.type === 'series' ? 'Series' : 'Project';
   return `<a class="work-preview" href="${collection.href}">
     <div class="work-preview-media">
       ${collection.cover ? renderPicture(collection.cover, { sizes: '100vw', loading: 'lazy' }) : ''}
@@ -85,7 +85,7 @@ function renderWorkPreview(collection) {
 
 function renderSelectedStrip(nav, flags, controls) {
   if (!flags.hasSelectedStrip) return '';
-  const keys = controls.selected_strip?.items || ['series', 'themes', 'about'];
+  const keys = controls.selected_strip?.items || ['series', 'places', 'themes', 'about'];
   const items = keys
     .map((key) => nav.find((item) => item.key === key))
     .filter((item) => {
@@ -101,8 +101,8 @@ function renderSelectedStrip(nav, flags, controls) {
 }
 
 export function renderHome(data) {
-  const { owner, highlights, series, projects, about, introHero, flags, controls, nav } = data;
-  const workCollections = [...series, ...projects];
+  const { owner, highlights, series, projects, places, about, introHero, flags, controls, nav } = data;
+  const workCollections = [...(places || []), ...series, ...projects];
   const stagger = controls?.motion?.highlight_stagger || 'jitter';
 
   return `
