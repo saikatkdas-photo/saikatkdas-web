@@ -2,7 +2,6 @@
 title: "Enviromental Portraits"
 summary: "People, in their natural environments, unfiltered"
 cover: "01.jpg"
-order: 1
 ---
 
 People, above all, are what lends character to a place.
