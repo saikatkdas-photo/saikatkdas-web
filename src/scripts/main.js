@@ -260,8 +260,8 @@
         var slot = card.closest('[data-timeline-slot]') || card.parentElement;
         var rect = slot.getBoundingClientRect();
         var t = tlSmooth(1 - Math.abs(rect.left + rect.width / 2 - cx) / range);
-        card.style.transform = 'scale(' + (0.86 + 0.14 * t).toFixed(4) + ')';
-        card.style.opacity = (0.78 + 0.22 * t).toFixed(3);
+        card.style.transform = 'scale(' + (0.92 + 0.08 * t).toFixed(4) + ')';
+        card.style.opacity = (0.86 + 0.14 * t).toFixed(3);
       }
     }
 
