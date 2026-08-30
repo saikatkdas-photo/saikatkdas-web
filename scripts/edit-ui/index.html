@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Content editor</title>
+  <link rel="stylesheet" href="/edit.css">
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar" id="sidebar">
+      <header class="sidebar-head">
+        <p class="brand">SKD</p>
+        <h1>Content</h1>
+        <label class="search">
+          <span class="sr-only">Filter files</span>
+          <input type="search" id="search" placeholder="Filter files" autocomplete="off">
+        </label>
+        <div class="filters">
+          <label class="chip">
+            <input type="checkbox" id="highlights-only">
+            <span>Highlights</span>
+          </label>
+        </div>
+      </header>
+      <nav class="tree" id="tree" aria-label="Files"></nav>
+    </aside>
+
+    <main class="main">
+      <header class="bar">
+        <button type="button" class="ghost menu-btn" id="menu-btn">Files</button>
+        <div class="bar-file">
+          <p class="path" id="file-path">Pick a file</p>
+          <p class="status" id="status" aria-live="polite"></p>
+        </div>
+        <div class="bar-actions">
+          <div class="mode" role="tablist" aria-label="Editor mode">
+            <button type="button" class="mode-btn is-on" data-mode="form" id="mode-form">Form</button>
+            <button type="button" class="mode-btn" data-mode="source" id="mode-source">Source</button>
+          </div>
+          <button type="button" class="ghost" id="rebuild-btn">Rebuild</button>
+          <button type="button" class="primary" id="save-btn" disabled>Save</button>
+        </div>
+      </header>
+      <div class="workspace" id="workspace">
+        <p class="empty">Choose a markdown file or site controls from the left.</p>
+      </div>
+    </main>
+  </div>
+  <script type="module" src="/edit.js"></script>
+</body>
+</html>

@@ -131,7 +131,15 @@ npm run new-project        # interactive: scaffold a new projects/ or series/ fo
 npm run import-photos -- --source "/path/to/photos" --dest series/japan --place japan
 npm run merge-folders -- --dest series/mullick-ghat "series/Mullick Ghat"
 npm run thumbs            # write missing 320px thumbnails next to existing images
+npm run edit              # local UI to edit markdown + data/controls.yaml
 ```
+
+### `npm run edit`
+
+Opens a local editor at `http://127.0.0.1:4174` (use `--no-open` to skip the
+browser). Edit collection write-ups, photo sidecars, About, gear, and the
+knobs in `data/controls.yaml`. Save writes the files on disk. Use **Rebuild**
+when you want `dist/` updated, then `npm run serve` to preview.
 
 ### `import-photos.js`
 

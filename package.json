@@ -10,7 +10,8 @@
     "new-project": "node scripts/new-project.js",
     "import-photos": "node scripts/import-photos.js",
     "merge-folders": "node scripts/merge-folders.js",
-    "thumbs": "node scripts/import-photos.js --ensure-thumbs"
+    "thumbs": "node scripts/import-photos.js --ensure-thumbs",
+    "edit": "node scripts/edit-server.js"
   },
   "repository": {
     "type": "git",

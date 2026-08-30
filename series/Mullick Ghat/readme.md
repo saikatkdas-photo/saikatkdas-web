@@ -1,7 +1,7 @@
 ---
 title: "Mullick Ghat"
 summary: "My hometown, its colourful streets, and the moments that never make it to postcards."
-cover: "16.jpg"
+cover: "08.jpg"
 order: 2
 ---
 

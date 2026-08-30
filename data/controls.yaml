@@ -5,19 +5,19 @@
 intro:
   enabled: true
   # reload = play on every homepage load; once = skip after first visit
-  play_on: reload
+  play_on: once
   timings:
     letters_in: 80          # ms: staggered SKD enters in the right-half center
-    letters_dock: 1300      # ms: SKD travels left and lines up
-    canvas_open: 2300       # ms: photo frame fills the viewport
+    letters_dock: 1300          # ms: SKD travels left and lines up
+    canvas_open: 2300          # ms: photo frame fills the viewport
     photo_in: 3100          # ms: photo fades in (still zoomed in)
-    photo_zoom: 3800        # ms: zoom-out toward a device fit
-    shutter: 6400           # ms: shutters wipe the photo (SKD stays)
-    name_expand: 7400       # ms: SKD extends to Saikat K Das
+    photo_zoom: 3800          # ms: zoom-out toward a device fit
+    shutter: 6400          # ms: shutters wipe the photo (SKD stays)
+    name_expand: 7400          # ms: SKD extends to Saikat K Das
     name_out: 9400          # ms: name leaves, homepage shows
-    total: 11200            # ms: loading counter duration
-  photo_zoom_start: 1.72    # scale at fade-in (tight crop; zoom-out travels further)
-  photo_zoom_end: 1.0       # scale after zoom-out
+    total: 11200          # ms: loading counter duration
+  photo_zoom_start: 1.72    # scale at fade-in
+  photo_zoom_end: 1    # scale after zoom-out
   # On short landscape viewports, zoom-out uses contain so the frame fits
   photo_fit_landscape: contain
 
@@ -30,14 +30,7 @@ fonts:
   intro: "Barlow Condensed, Arial-BoldMT,Arial-Regular, Arial, sans-serif"
   intro_weight: 800
   intro_google: "Barlow+Condensed:wght@500;600;700"
-  # Optional shorthand; used if `intro` is omitted. Also marks the current card on /intro-type/.
   intro_choice: barlow-condensed
-  # Other gaunt stacks to paste into intro / intro_weight / intro_google:
-  #   Oswald:                "Oswald, Helvetica Neue, sans-serif" / 500 / Oswald:wght@500;600;700
-  #   Alumni Sans:           "Alumni Sans, Helvetica Neue, sans-serif" / 600 / Alumni+Sans:wght@500;600;700
-  #   Sofia Sans Condensed:  "Sofia Sans Condensed, Helvetica Neue, sans-serif" / 600 / Sofia+Sans+Condensed:wght@500;600;700
-  #   Big Shoulders Display: "Big Shoulders Display, Helvetica Neue, sans-serif" / 600 / Big+Shoulders+Display:wght@500;600;700
-  # Loaded from Google as a Helvetica-like fallback (Apple already has Helvetica Neue)
   google: "IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500"
 
 colors:
@@ -63,7 +56,6 @@ sections:
   selected_strip: true
   work_previews: true
   about: true
-  # These also hide when the matching content folder is empty
   projects: true
   series: true
   untitled: true
@@ -76,20 +68,14 @@ sections:
 selected_strip:
   enabled: true
   # Keys from data/site.json nav. Empty folders / false section flags drop out.
-  items: [series, places, themes, about]
+  items: [series, places, untitled, timeline, themes, about]
 
 motion:
-  honor_reduced: true
-  # jitter = seeded random hang (landscape vs portrait); linear = repeating stair; none = flush
-  highlight_stagger: jitter
-  # Horizontal carousels (Selected + Timeline). 1 = current feel.
-  # Higher = the strip crosses faster. 0.5 = half speed. Clamped to 0.25–4.
-  scroll_speed: 1
-  # Optional per-track overrides (uncomment to differ from scroll_speed)
-  # selected_scroll_speed: 1    # homepage Selected pin-scroll / pan
-  # timeline_scroll_speed: 1    # /timeline/ wheel pan
+  honor_reduced: false
+  highlight_stagger: none    # jitter | linear | none
+  scroll_speed: 1    # 1 = current feel. Clamped to 0.25-4.
+  selected_scroll_speed: 0.6
 
 layout:
-  highlight_track_min_height: "52dvh"
-  selected_min_height: "100dvh"
----
+  highlight_track_min_height: 52dvh
+  selected_min_height: 100dvh
