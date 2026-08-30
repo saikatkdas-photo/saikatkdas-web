@@ -259,7 +259,7 @@ also hide automatically when their content is empty.
 
 ### Other knobs
 
-- `selected_strip.items`: nav keys shown as the floating `series * places * themes * about` strip
+- `selected_strip.items`: nav keys shown as the floating selected strip (dot-separated, horizontally scrollable)
 - `motion.highlight_stagger`: `jitter` (default), `linear`, or `none`
 - `motion.honor_reduced`: skip the intro when the OS asks for reduced motion
 - `motion.scroll_speed`: Selected + Timeline carousel speed (`1` = current; higher = faster). Optional `selected_scroll_speed` / `timeline_scroll_speed` override one track

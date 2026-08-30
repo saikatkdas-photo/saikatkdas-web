@@ -96,7 +96,7 @@ function renderSelectedStrip(nav, flags, controls) {
     });
   if (!items.length) return '';
   return `<nav class="selected-strip" aria-label="Sections">
-    ${items.map((item, i) => `${i ? '<span class="selected-strip-star" aria-hidden="true">*</span>' : ''}<a href="${item.href}">${escapeHtml(item.label.toLowerCase())}</a>`).join('')}
+    ${items.map((item, i) => `${i ? '<span class="selected-strip-dot" aria-hidden="true"></span>' : ''}<a href="${item.href}">${escapeHtml(item.label.toLowerCase())}</a>`).join('')}
   </nav>`;
 }
 

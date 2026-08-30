@@ -368,11 +368,18 @@ body.intro-done .highlight-item .frame {
 .selected-strip {
   margin-top: auto;
   padding: var(--sp-4) var(--gutter) var(--sp-3);
-  display: grid;
-  grid-auto-flow: column;
-  grid-auto-columns: 1fr auto;
-  align-items: baseline;
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 0.7em;
   width: 100%;
+  min-width: 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  overscroll-behavior-x: contain;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-x;
+  scrollbar-width: none;
   font-family: var(--font-display);
   font-weight: 500;
   font-size: clamp(0.95rem, 3.4vw, 1.15rem);
@@ -380,20 +387,21 @@ body.intro-done .highlight-item .frame {
   text-transform: lowercase;
   background: none;
 }
+.selected-strip::-webkit-scrollbar { display: none; }
 .selected-strip a {
+  flex: 0 0 auto;
   color: var(--ink);
   padding: 0.35rem 0;
-  justify-self: center;
+  white-space: nowrap;
 }
-.selected-strip a:first-child { justify-self: start; }
-.selected-strip a:last-of-type { justify-self: end; }
 .selected-strip a:hover { color: var(--accent); }
-.selected-strip-star {
-  color: var(--ink-faint);
-  font-weight: 400;
+.selected-strip-dot {
+  flex: 0 0 auto;
+  width: 0.28em;
+  height: 0.28em;
+  border-radius: 50%;
+  background: var(--ink);
   pointer-events: none;
-  justify-self: center;
-  padding: 0 0.4em;
 }
 
 @media (max-width: 799px) {

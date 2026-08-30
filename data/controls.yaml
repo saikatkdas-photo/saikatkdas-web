@@ -68,12 +68,14 @@ sections:
 selected_strip:
   enabled: true
   # Keys from data/site.json nav. Empty folders / false section flags drop out.
-  items: [series, places, untitled, timeline, themes, about]
+  items: [series, untitled, timeline, themes, about]
 
 motion:
   honor_reduced: false
   highlight_stagger: none    # jitter | linear | none
-  scroll_speed: 0.6    # 1 = current feel. Clamped to 0.25-4.
+  scroll_speed:     # 1 = current feel. Clamped to 0.25-4.
+  selected_scroll_speed: 0.6
+  timeline_scroll_speed: 0.8
 
 layout:
   highlight_track_min_height: 52dvh
