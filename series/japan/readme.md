@@ -1,7 +1,7 @@
 ---
 title: "Japan"
 summary: "A quieter register — light, stillness, and paper lanterns."
-cover: "03.jpg"
+cover: "06.jpg"
 order: 5
 ---
 
