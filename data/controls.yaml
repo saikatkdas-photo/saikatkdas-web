@@ -73,8 +73,7 @@ selected_strip:
 motion:
   honor_reduced: false
   highlight_stagger: none    # jitter | linear | none
-  scroll_speed: 1    # 1 = current feel. Clamped to 0.25-4.
-  selected_scroll_speed: 0.6
+  scroll_speed: 0.6    # 1 = current feel. Clamped to 0.25-4.
 
 layout:
   highlight_track_min_height: 52dvh
