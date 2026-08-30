@@ -254,6 +254,7 @@ also hide automatically when their content is empty.
 - `selected_strip.items`: nav keys shown as the floating `series * places * themes * about` strip
 - `motion.highlight_stagger`: `jitter` (default), `linear`, or `none`
 - `motion.honor_reduced`: skip the intro when the OS asks for reduced motion
+- `motion.scroll_speed`: Selected + Timeline carousel speed (`1` = current; higher = faster). Optional `selected_scroll_speed` / `timeline_scroll_speed` override one track
 - `layout.highlight_track_min_height` / `selected_min_height`: Selected gallery height
 
 After edits:

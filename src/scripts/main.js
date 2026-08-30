@@ -2,6 +2,18 @@
   'use strict';
 
   var reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var motionConfig = { selectedScrollSpeed: 1, timelineScrollSpeed: 1 };
+  try {
+    var motionEl = document.querySelector('[data-motion-config]');
+    if (motionEl) motionConfig = Object.assign(motionConfig, JSON.parse(motionEl.textContent));
+  } catch (err) {}
+  function clampScrollSpeed(value, fallback) {
+    var n = Number(value);
+    if (!isFinite(n) || n <= 0) return fallback;
+    return Math.min(4, Math.max(0.25, n));
+  }
+  var selectedScrollSpeed = clampScrollSpeed(motionConfig.selectedScrollSpeed, 1);
+  var timelineScrollSpeed = clampScrollSpeed(motionConfig.timelineScrollSpeed, 1);
 
   if (document.documentElement.classList.contains('from-sheet')) {
     window.setTimeout(function () {
@@ -255,7 +267,7 @@
 
     function mobileTravelY(maxX) {
       if (maxX <= 0) return 0;
-      return Math.min(maxX / HI_MOBILE_GAIN, window.innerHeight * 2.1);
+      return Math.min(maxX / (HI_MOBILE_GAIN * selectedScrollSpeed), window.innerHeight * 2.1);
     }
 
     function readCenterOffset(item) {
@@ -306,8 +318,9 @@
       stopHighlightCoast();
       clearHighlightFocus();
       extraX = Math.max(0, highlightTrack.scrollWidth - highlightTrack.clientWidth);
+      var deskTravel = extraX / selectedScrollSpeed;
       selectedSection.style.height = extraX > 8
-        ? (selectedSticky.offsetHeight + extraX) + 'px'
+        ? (selectedSticky.offsetHeight + deskTravel) + 'px'
         : '';
       syncSelected();
     }
@@ -326,7 +339,7 @@
       }
       if (extraX <= 0) return;
       var top = selectedSection.getBoundingClientRect().top;
-      var scrolled = Math.min(extraX, Math.max(0, -top));
+      var scrolled = Math.min(extraX, Math.max(0, -top * selectedScrollSpeed));
       if (Math.abs(highlightTrack.scrollLeft - scrolled) > 0.5) {
         highlightTrack.scrollLeft = scrolled;
       }
@@ -444,7 +457,7 @@
       if (!deskDrag.active) return;
       var dx = e.clientX - deskDrag.startX;
       if (Math.abs(dx) > 4) deskDrag.moved = true;
-      window.scrollTo(0, deskDrag.startY - dx);
+      window.scrollTo(0, deskDrag.startY - dx / selectedScrollSpeed);
     }, { passive: false });
     function endSelectedDrag(e) {
       if (hiDrag.active) {
@@ -619,7 +632,7 @@
       if (delta > 0 && timelineAtEnd()) return;
       e.preventDefault();
       stopTimelineCoast();
-      setTimelineX(tlX + delta);
+      setTimelineX(tlX + delta * timelineScrollSpeed);
     }, { passive: false });
 
     timelineTrack.addEventListener('pointerdown', function (e) {

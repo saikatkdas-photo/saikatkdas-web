@@ -1,4 +1,4 @@
-import { controlsToCss, introRuntimeConfig, googleFontsHref, INTRO_FONTS, resolveIntroFont } from '../lib/controls.js';
+import { controlsToCss, introRuntimeConfig, motionRuntimeConfig, googleFontsHref, INTRO_FONTS, resolveIntroFont } from '../lib/controls.js';
 
 export function escapeHtml(value) {
   return String(value ?? '')
@@ -225,6 +225,7 @@ export function renderLayout({ title, description, activeKey, site, owner, nav, 
   const googleHref = controls ? googleFontsHref(controls, googleFamilies) : '';
   const google = googleHref ? `<link rel="stylesheet" href="${googleHref}">` : '';
   const introConfig = controls ? introRuntimeConfig(controls) : {};
+  const motionConfigJson = JSON.stringify(controls ? motionRuntimeConfig(controls) : {}).replace(/</g, '\\u003c');
   return `<!DOCTYPE html>
 <html lang="${site.language || 'en'}">
 <head>
@@ -269,6 +270,7 @@ export function renderLayout({ title, description, activeKey, site, owner, nav, 
   </main>
   ${renderFooter({ owner })}
   ${renderLightboxMarkup()}
+  <script type="application/json" data-motion-config>${motionConfigJson}</script>
   <script src="/scripts/main.js${v}" defer></script>
 </body>
 </html>`;

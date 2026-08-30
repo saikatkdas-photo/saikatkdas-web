@@ -71,6 +71,9 @@ export const CONTROL_DEFAULTS = {
   motion: {
     honor_reduced: true,
     highlight_stagger: 'jitter',
+    scroll_speed: 1,
+    selected_scroll_speed: 1,
+    timeline_scroll_speed: 1,
   },
   layout: {
     highlight_track_min_height: '52dvh',
@@ -227,6 +230,12 @@ export function controlsToCss(controls) {
 }`;
 }
 
+function clampScrollSpeed(value, fallback = 1) {
+  const n = Number(value);
+  if (!Number.isFinite(n) || n <= 0) return fallback;
+  return Math.min(4, Math.max(0.25, n));
+}
+
 export function introRuntimeConfig(controls) {
   const introFont = resolveIntroFont(controls);
   return {
@@ -239,5 +248,16 @@ export function introRuntimeConfig(controls) {
     introFonts: Object.fromEntries(
       Object.entries(INTRO_FONTS).map(([key, spec]) => [key, { family: quoteFontStack(spec.stack), weight: spec.weight }])
     ),
+  };
+}
+
+export function motionRuntimeConfig(controls) {
+  const m = controls?.motion || {};
+  const shared = clampScrollSpeed(m.scroll_speed, 1);
+  const selectedSet = m.selected_scroll_speed != null && m.selected_scroll_speed !== '';
+  const timelineSet = m.timeline_scroll_speed != null && m.timeline_scroll_speed !== '';
+  return {
+    selectedScrollSpeed: selectedSet ? clampScrollSpeed(m.selected_scroll_speed, shared) : shared,
+    timelineScrollSpeed: timelineSet ? clampScrollSpeed(m.timeline_scroll_speed, shared) : shared,
   };
 }

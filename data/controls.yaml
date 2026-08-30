@@ -82,6 +82,12 @@ motion:
   honor_reduced: true
   # jitter = seeded random hang (landscape vs portrait); linear = repeating stair; none = flush
   highlight_stagger: jitter
+  # Horizontal carousels (Selected + Timeline). 1 = current feel.
+  # Higher = the strip crosses faster. 0.5 = half speed. Clamped to 0.25–4.
+  scroll_speed: 1
+  # Optional per-track overrides (uncomment to differ from scroll_speed)
+  # selected_scroll_speed: 1    # homepage Selected pin-scroll / pan
+  # timeline_scroll_speed: 1    # /timeline/ wheel pan
 
 layout:
   highlight_track_min_height: "52dvh"
