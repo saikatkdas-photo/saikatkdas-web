@@ -138,8 +138,10 @@ npm run edit              # local UI to edit markdown + data/controls.yaml
 
 Opens a local editor at `http://127.0.0.1:4174` (use `--no-open` to skip the
 browser). Edit collection write-ups, photo sidecars, About, gear, and the
-knobs in `data/controls.yaml`. Save writes the files on disk. Use **Rebuild**
-when you want `dist/` updated, then `npm run serve` to preview.
+knobs in `data/controls.yaml`. The **Tools** panel runs `import-photos`,
+`merge-folders`, new series/project, thumbs, and place promotion. Save writes
+the files on disk. Use **Rebuild** when you want `dist/` updated, then
+`npm run serve` to preview.
 
 ### `import-photos.js`
 

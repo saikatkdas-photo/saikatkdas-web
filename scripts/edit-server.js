@@ -22,6 +22,15 @@ import {
   serializeMarkdown,
   writeEditable,
 } from './lib/edit-io.js';
+import {
+  browseDir,
+  browseShortcuts,
+  buildImportArgs,
+  buildMergeArgs,
+  buildSimpleArgs,
+  createCollection,
+  listCollections,
+} from './lib/edit-tools.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..');
@@ -116,29 +125,29 @@ function serveAsset(req, res, relPath) {
   fs.createReadStream(resolved.full).pipe(res);
 }
 
-let rebuildProc = null;
+let jobProc = null;
 
-function runRebuild() {
+function runNodeScript(scriptName, args = []) {
   return new Promise((resolve, reject) => {
-    if (rebuildProc) {
-      reject(Object.assign(new Error('A rebuild is already running'), { status: 409 }));
+    if (jobProc) {
+      reject(Object.assign(new Error('Another job is already running'), { status: 409 }));
       return;
     }
-    const child = spawn(process.execPath, [path.join(ROOT, 'scripts', 'build.js')], {
+    const child = spawn(process.execPath, [path.join(ROOT, 'scripts', scriptName), ...args], {
       cwd: ROOT,
       env: process.env,
     });
-    rebuildProc = child;
+    jobProc = child;
     let output = '';
     child.stdout.on('data', (chunk) => { output += chunk.toString(); });
     child.stderr.on('data', (chunk) => { output += chunk.toString(); });
     child.on('error', (err) => {
-      rebuildProc = null;
+      jobProc = null;
       reject(err);
     });
     child.on('close', (code) => {
-      rebuildProc = null;
-      resolve({ ok: code === 0, code, output });
+      jobProc = null;
+      resolve({ ok: code === 0, code, output, args: [scriptName, ...args] });
     });
   });
 }
@@ -195,7 +204,58 @@ const server = http.createServer(async (req, res) => {
     }
 
     if (pathname === '/api/rebuild' && req.method === 'POST') {
-      const result = await runRebuild();
+      const result = await runNodeScript('build.js');
+      json(res, result.ok ? 200 : 500, result);
+      return;
+    }
+
+    if (pathname === '/api/tools/meta' && req.method === 'GET') {
+      json(res, 200, {
+        collections: await listCollections(ROOT),
+        shortcuts: browseShortcuts(ROOT),
+      });
+      return;
+    }
+
+    if (pathname === '/api/tools/browse' && req.method === 'GET') {
+      json(res, 200, await browseDir(queryParam(req.url, 'path')));
+      return;
+    }
+
+    if (pathname === '/api/tools/new' && req.method === 'POST') {
+      const created = await createCollection(ROOT, await readBody(req));
+      json(res, 200, created);
+      return;
+    }
+
+    if (pathname === '/api/tools/import' && req.method === 'POST') {
+      const result = await runNodeScript('import-photos.js', buildImportArgs(await readBody(req)));
+      json(res, result.ok ? 200 : 500, result);
+      return;
+    }
+
+    if (pathname === '/api/tools/merge' && req.method === 'POST') {
+      const result = await runNodeScript('merge-folders.js', buildMergeArgs(await readBody(req)));
+      json(res, result.ok ? 200 : 500, result);
+      return;
+    }
+
+    if (pathname === '/api/tools/scan' && req.method === 'POST') {
+      const result = await runNodeScript('merge-folders.js', ['--scan']);
+      json(res, result.ok ? 200 : 500, result);
+      return;
+    }
+
+    if (pathname === '/api/tools/thumbs' && req.method === 'POST') {
+      const body = await readBody(req);
+      const result = await runNodeScript('import-photos.js', ['--ensure-thumbs', ...buildSimpleArgs(body)]);
+      json(res, result.ok ? 200 : 500, result);
+      return;
+    }
+
+    if (pathname === '/api/tools/promote-places' && req.method === 'POST') {
+      const body = await readBody(req);
+      const result = await runNodeScript('import-photos.js', ['--promote-places', ...buildSimpleArgs(body)]);
       json(res, result.ok ? 200 : 500, result);
       return;
     }
