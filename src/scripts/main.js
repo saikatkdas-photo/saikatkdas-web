@@ -525,6 +525,52 @@
     });
   }
 
+  /* Text ribbon under Selected: native swipe, mouse drag. Does not touch photo hijack. */
+  var selectedStrip = document.querySelector('[data-selected-strip]');
+  if (selectedStrip) {
+    var stripDrag = { on: false, x: 0, left: 0, moved: false, id: null };
+    selectedStrip.addEventListener('pointerdown', function (e) {
+      if (e.pointerType !== 'mouse' || e.button !== 0) return;
+      if (selectedStrip.scrollWidth <= selectedStrip.clientWidth + 2) return;
+      stripDrag.on = true;
+      stripDrag.moved = false;
+      stripDrag.x = e.clientX;
+      stripDrag.left = selectedStrip.scrollLeft;
+      stripDrag.id = e.pointerId;
+      selectedStrip.setPointerCapture(e.pointerId);
+    });
+    selectedStrip.addEventListener('pointermove', function (e) {
+      if (!stripDrag.on) return;
+      var dx = e.clientX - stripDrag.x;
+      if (Math.abs(dx) > 3) stripDrag.moved = true;
+      if (!stripDrag.moved) return;
+      e.preventDefault();
+      selectedStrip.scrollLeft = stripDrag.left - dx;
+    });
+    function endStripDrag(e) {
+      if (stripDrag.id != null && e && e.pointerId === stripDrag.id) {
+        try { selectedStrip.releasePointerCapture(stripDrag.id); } catch (err) {}
+      }
+      stripDrag.on = false;
+      stripDrag.id = null;
+    }
+    selectedStrip.addEventListener('pointerup', endStripDrag);
+    selectedStrip.addEventListener('pointercancel', endStripDrag);
+    selectedStrip.addEventListener('click', function (e) {
+      if (stripDrag.moved) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+      stripDrag.moved = false;
+    }, true);
+    selectedStrip.addEventListener('wheel', function (e) {
+      if (Math.abs(e.deltaX) <= Math.abs(e.deltaY)) return;
+      if (selectedStrip.scrollWidth <= selectedStrip.clientWidth + 2) return;
+      e.preventDefault();
+      selectedStrip.scrollLeft += e.deltaX;
+    }, { passive: false });
+  }
+
   /* ---------------- Timeline: transform pan, newest first ------------------- */
   var timelineStage = document.querySelector('[data-timeline-sticky]');
   var timelineTrack = document.querySelector('[data-timeline-track]');
