@@ -169,7 +169,7 @@ async function buildPlaces(data) {
 
   const indexHtml = page(renderPlacesIndex(data.places), {
     title: `Places — ${data.owner.name}`,
-    description: 'Cities and towns the work keeps returning to.',
+    description: 'Cities the work keeps returning to.',
     activeKey: 'places',
     canonicalPath: '/places/',
     data,
@@ -304,7 +304,7 @@ async function buildIntroType(data) {
 
 async function build404(data) {
   const html = page(
-    `<section class="hero wrap"><h1 class="hero-heading">404</h1><p class="hero-sub">That frame doesn't exist. <a class="text-link" href="/">Back to the homepage</a>.</p></section>`,
+    `<section class="hero wrap"><h1 class="hero-heading">That frame doesn't exist.</h1><p class="hero-sub"><a class="text-link" href="/">Back to the homepage</a></p></section>`,
     { title: `Not found — ${data.owner.name}`, description: 'Page not found.', activeKey: '', canonicalPath: '/404.html', data }
   );
   await writeFile('404.html', html);

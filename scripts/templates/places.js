@@ -7,7 +7,7 @@ export function renderPlacesIndex(places) {
       <h1 class="hero-heading">Places</h1>
       <span class="hero-count">(${places.length})</span>
     </div>
-    <p class="hero-sub">Cities and towns the work keeps returning to — only frames marked with a place.</p>
+    <p class="hero-sub">Cities the work keeps returning to.</p>
   </section>
   <section class="section wrap" style="padding-top: 0;">
     <div class="grid">

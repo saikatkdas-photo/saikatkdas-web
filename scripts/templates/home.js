@@ -149,7 +149,7 @@ export function renderHome(data) {
   ${flags.hasAboutTeaser ? `<section class="section on-dark">
     <div class="wrap about-layout">
       <div>
-        <h2 style="margin-top: 0; font-size: clamp(2rem, 5vw, 3.25rem);">Get to know ${escapeHtml(owner.name.split(' ')[0])}</h2>
+        <h2 style="margin-top: 0; font-size: clamp(2rem, 5vw, 3.25rem);">About</h2>
         <div class="about-copy" style="margin-top: 1.5rem;">${about.html.split('</p>').filter(Boolean).slice(0, 2).join('</p>') + '</p>'}</div>
         <a class="btn" style="margin-top: 2rem;" href="/about/">Read the full story</a>
       </div>
