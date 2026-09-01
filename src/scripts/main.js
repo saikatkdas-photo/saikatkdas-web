@@ -160,7 +160,7 @@
     var hiStart = 0;
     var hiEnd = 0;
     var hiSyncLock = false;
-    var HI_MOBILE_GAIN = 2.5;
+    var HI_MOBILE_GAIN = 1.5;
     var hiCards = Array.prototype.slice.call(highlightTrack.querySelectorAll('[data-highlight-card]'));
     var hiItems = Array.prototype.slice.call(highlightTrack.querySelectorAll('.highlight-item'));
     var hiX = 0;
