@@ -15,6 +15,13 @@
   var selectedScrollSpeed = clampScrollSpeed(motionConfig.selectedScrollSpeed, 1);
   var timelineScrollSpeed = clampScrollSpeed(motionConfig.timelineScrollSpeed, 1);
 
+  function pageScrollBy(dy) {
+    window.scrollBy({ top: dy, left: 0, behavior: 'auto' });
+  }
+  function pageScrollToY(y) {
+    window.scrollTo({ top: y, left: 0, behavior: 'auto' });
+  }
+
   if (document.documentElement.classList.contains('from-sheet')) {
     window.setTimeout(function () {
       document.documentElement.classList.remove('from-sheet');
@@ -185,8 +192,17 @@
     }
 
     function highlightMax() {
-      if (!highlightRail) return 0;
-      return Math.max(0, highlightRail.scrollWidth - highlightTrack.clientWidth);
+      var view = highlightTrack.clientWidth;
+      if (highlightRail) {
+        var railW = Math.max(highlightRail.scrollWidth, highlightRail.offsetWidth);
+        if (railW > view + 1) return railW - view;
+      }
+      var fromTrack = highlightTrack.scrollWidth - view;
+      if (fromTrack > 8) return fromTrack;
+      if (!hiItems.length) return 0;
+      var first = hiItems[0].getBoundingClientRect();
+      var last = hiItems[hiItems.length - 1].getBoundingClientRect();
+      return Math.max(0, (last.right - first.left) - view);
     }
 
     function clampHiX(next) {
@@ -216,7 +232,6 @@
         hiCards[i].style.transform = '';
         hiCards[i].style.opacity = '';
       }
-      if (highlightRail) highlightRail.style.transform = '';
     }
 
     function paintHighlight() {
@@ -267,7 +282,8 @@
 
     function mobileTravelY(maxX) {
       if (maxX <= 0) return 0;
-      return Math.min(maxX / (HI_MOBILE_GAIN * selectedScrollSpeed), window.innerHeight * 2.1);
+      var base = Math.min(maxX / HI_MOBILE_GAIN, window.innerHeight * 2.1);
+      return base / selectedScrollSpeed;
     }
 
     function readCenterOffset(item) {
@@ -290,7 +306,7 @@
       var progress = Math.min(1, Math.max(0, (hiX - hiStart) / span));
       var absTop = selectedSection.getBoundingClientRect().top + window.scrollY;
       hiSyncLock = true;
-      window.scrollTo(0, absTop + progress * extraY);
+      pageScrollToY(absTop + progress * extraY);
       window.requestAnimationFrame(function () { hiSyncLock = false; });
     }
 
@@ -317,7 +333,7 @@
       hiEnd = 0;
       stopHighlightCoast();
       clearHighlightFocus();
-      extraX = Math.max(0, highlightTrack.scrollWidth - highlightTrack.clientWidth);
+      extraX = highlightMax();
       var deskTravel = extraX / selectedScrollSpeed;
       selectedSection.style.height = extraX > 8
         ? (selectedSticky.offsetHeight + deskTravel) + 'px'
@@ -340,7 +356,10 @@
       if (extraX <= 0) return;
       var top = selectedSection.getBoundingClientRect().top;
       var scrolled = Math.min(extraX, Math.max(0, -top * selectedScrollSpeed));
-      if (Math.abs(highlightTrack.scrollLeft - scrolled) > 0.5) {
+      if (highlightRail) {
+        highlightTrack.scrollLeft = 0;
+        highlightRail.style.transform = 'translate3d(' + (-scrolled).toFixed(2) + 'px,0,0)';
+      } else if (Math.abs(highlightTrack.scrollLeft - scrolled) > 0.5) {
         highlightTrack.scrollLeft = scrolled;
       }
     }
@@ -390,13 +409,13 @@
         e.preventDefault();
         hiTouched = true;
         stopHighlightCoast();
-        window.scrollBy(0, delta);
+        pageScrollBy(delta);
         return;
       }
       if (extraX <= 2) return;
       if (Math.abs(e.deltaY) <= Math.abs(e.deltaX) && e.deltaX !== 0) return;
       e.preventDefault();
-      window.scrollBy(0, e.deltaY + e.deltaX);
+      pageScrollBy(e.deltaY + e.deltaX);
     }, { passive: false });
 
     highlightTrack.addEventListener('pointerdown', function (e) {
@@ -457,7 +476,7 @@
       if (!deskDrag.active) return;
       var dx = e.clientX - deskDrag.startX;
       if (Math.abs(dx) > 4) deskDrag.moved = true;
-      window.scrollTo(0, deskDrag.startY - dx / selectedScrollSpeed);
+      pageScrollToY(deskDrag.startY - dx / selectedScrollSpeed);
     }, { passive: false });
     function endSelectedDrag(e) {
       if (hiDrag.active) {

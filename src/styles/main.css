@@ -275,13 +275,10 @@ body.intro-done .hero-featured {
 }
 
 .highlight-track {
-  display: flex;
-  flex-direction: row;
-  flex-wrap: nowrap;
-  align-items: flex-end;
-  gap: clamp(0.7rem, 2.2vw, 2rem);
+  display: block;
   width: 100%;
   min-width: 0;
+  max-width: 100%;
   min-height: var(--highlight-track-min-h);
   overflow-x: hidden;
   overflow-y: hidden;
@@ -296,7 +293,16 @@ body.intro-done .hero-featured {
 .highlight-track:active { cursor: grabbing; }
 .highlight-track::-webkit-scrollbar { display: none; }
 
-.highlight-rail { display: contents; }
+.highlight-rail {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  align-items: flex-end;
+  gap: clamp(0.7rem, 2.2vw, 2rem);
+  width: max-content;
+  min-width: 100%;
+  min-height: var(--highlight-track-min-h);
+}
 .highlight-spacer { display: none; }
 .highlight-media { display: block; }
 
