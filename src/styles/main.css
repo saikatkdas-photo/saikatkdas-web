@@ -275,6 +275,13 @@ body.intro-done .hero-featured {
 }
 
 .highlight-track {
+  /* Height-driven sizing: every card shares a common frame height,
+     so portraits and landscapes stay orientation-agnostic on desktop.
+     dvh keeps things stable across mobile browser chrome; the px cap
+     prevents oversize frames on tall external monitors. */
+  --frame-h: min(62dvh, 620px);
+  --frame-h-port: min(70dvh, 700px);
+  --hi-lift-max: min(var(--hi-lift, 0px), 18dvh);
   display: block;
   width: 100%;
   min-width: 0;
@@ -301,16 +308,19 @@ body.intro-done .hero-featured {
   gap: clamp(0.7rem, 2.2vw, 2rem);
   width: max-content;
   min-width: 100%;
-  min-height: var(--highlight-track-min-h);
+  min-height: calc(var(--frame-h-port) + 18dvh);
 }
 .highlight-spacer { display: none; }
-.highlight-media { display: block; }
+.highlight-media { display: block; width: 100%; height: 100%; }
 
 .highlight-item {
   position: relative;
   display: block;
   flex: 0 0 auto;
-  width: min(var(--hi-w, 72vw), 520px);
+  /* Width follows aspect ratio at a common height, so all shapes align
+     visually. Portraits get a slightly taller frame per design brief. */
+  width: min(calc(var(--frame-h) * var(--ar, 1.5)), 72vw);
+  height: var(--frame-h);
   overflow: hidden;
   border-radius: var(--radius);
   background: var(--bg-raised);
@@ -319,28 +329,50 @@ body.intro-done .hero-featured {
 }
 .highlight-item[data-align="start"] {
   align-self: flex-start;
-  margin-top: var(--hi-lift, 0px);
+  margin-top: var(--hi-lift-max, 0px);
   margin-bottom: 0;
 }
 .highlight-item[data-align="center"] {
   align-self: center;
-  margin-top: calc(var(--hi-lift, 0px) * 0.4);
-  margin-bottom: calc(var(--hi-lift, 0px) * 0.6);
+  margin-top: calc(var(--hi-lift-max, 0px) * 0.4);
+  margin-bottom: calc(var(--hi-lift-max, 0px) * 0.6);
 }
 .highlight-item[data-align="end"] {
   align-self: flex-end;
   margin-top: 0;
-  margin-bottom: var(--hi-lift, 0px);
+  margin-bottom: var(--hi-lift-max, 0px);
 }
-.highlight-item[data-shape="land"] { width: min(var(--hi-w, 78vw), 620px); }
-.highlight-item[data-shape="port"] { width: min(var(--hi-w, 46vw), 340px); }
+.highlight-item[data-shape="land"] {
+  width: min(calc(var(--frame-h) * var(--ar, 1.5)), 78vw);
+  height: var(--frame-h);
+}
+.highlight-item[data-shape="port"] {
+  width: min(calc(var(--frame-h-port) * var(--ar, 0.67)), 52vw);
+  height: var(--frame-h-port);
+}
+.highlight-item[data-shape="sq"] {
+  width: min(calc(var(--frame-h) * var(--ar, 1)), 60vw);
+  height: var(--frame-h);
+}
+.highlight-item .frame {
+  width: 100%;
+  height: 100%;
+  aspect-ratio: var(--ar, 3 / 2);
+}
+.highlight-item .pic,
+.highlight-item .pic img,
+.highlight-item img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
 .highlight-track[data-stagger="linear"] .highlight-item:nth-of-type(3n+1) { align-self: flex-start; margin-top: 8vh; margin-bottom: 0; }
 .highlight-track[data-stagger="linear"] .highlight-item:nth-of-type(3n+2) { align-self: center; margin-top: 4vh; margin-bottom: 6vh; }
 .highlight-track[data-stagger="linear"] .highlight-item:nth-of-type(3n) { align-self: flex-end; margin-top: 0; margin-bottom: 10vh; }
 .highlight-track[data-stagger="none"] .highlight-item { align-self: flex-end; margin-top: 0; margin-bottom: 0; }
 .highlight-item .frame { overflow: hidden; }
-.highlight-item .pic { display: block; width: 100%; overflow: hidden; }
-.highlight-item img { width: 100%; height: auto; display: block; transition: transform var(--dur-med) var(--ease); pointer-events: none; }
+.highlight-item .pic { display: block; width: 100%; height: 100%; overflow: hidden; }
+.highlight-item img { width: 100%; height: 100%; display: block; object-fit: cover; transition: transform var(--dur-med) var(--ease); pointer-events: none; }
 @media (hover: hover) and (pointer: fine) {
   .highlight-item:hover img { transform: scale(1.04); }
   .highlight-item:hover .arrow { transform: translate(3px, -3px); }
@@ -449,7 +481,10 @@ body.intro-done .highlight-item .frame {
   }
   .selected-count { font-size: 0.7rem; }
   .highlight-track {
-    --frame-h: min(58dvh, calc(100dvh - var(--header-h) - 7rem));
+    /* Enlarge landscape slightly, give portraits their own taller frame
+       so the strip feels balanced in mobile portrait viewing. */
+    --frame-h: min(62dvh, calc(100dvh - var(--header-h) - 7rem));
+    --frame-h-port: min(68dvh, calc(100dvh - var(--header-h) - 6rem));
     --hi-gap: 0.5rem;
     container-type: size;
     display: block;
@@ -497,13 +532,20 @@ body.intro-done .highlight-item .frame {
   }
   .highlight-item,
   .highlight-item[data-shape="land"] {
-    width: min(calc(var(--frame-h) * var(--ar, 1.5)), max(88vw, 88cqi));
+    width: min(calc(var(--frame-h) * var(--ar, 1.5)), max(92vw, 92cqi));
+    height: auto;
     overflow: visible;
     background: none;
     border-radius: 0;
   }
-  .highlight-item[data-shape="port"] { width: min(calc(var(--frame-h) * var(--ar, 0.67)), max(72vw, 72cqi)); }
-  .highlight-item[data-shape="sq"] { width: min(calc(var(--frame-h) * var(--ar, 1)), max(80vw, 80cqi)); }
+  .highlight-item[data-shape="port"] {
+    width: min(calc(var(--frame-h-port, var(--frame-h)) * var(--ar, 0.67)), max(74vw, 74cqi));
+    height: auto;
+  }
+  .highlight-item[data-shape="sq"] {
+    width: min(calc(var(--frame-h) * var(--ar, 1)), max(82vw, 82cqi));
+    height: auto;
+  }
   .highlight-media {
     transform-origin: 50% 50%;
     will-change: transform, opacity;
@@ -560,7 +602,9 @@ body.intro-done .highlight-item .frame {
     padding-bottom: max(0.3rem, env(safe-area-inset-bottom, 0px));
   }
   .highlight-track {
-    --frame-h: min(46dvh, calc(100dvh - var(--header-h) - 4.75rem));
+    /* Mobile landscape (rare): keep both frames short so nothing clips. */
+    --frame-h: min(48dvh, calc(100dvh - var(--header-h) - 4.75rem));
+    --frame-h-port: min(58dvh, calc(100dvh - var(--header-h) - 4rem));
   }
   .highlight-caption { padding-top: 0.22rem; }
   .highlight-caption .title { font-size: 0.78rem; }
@@ -1829,8 +1873,7 @@ body.intro-done .site-footer { opacity: 1; transition: opacity 800ms var(--ease)
 /* When we let natural aspect ratio own the box, image should follow container height */
 .gallery-item .pic img,
 .card .pic img,
-.detail-cover .pic img,
-.highlight-item .pic img { height: auto; }
+.detail-cover .pic img { height: auto; }
 
 @media (max-width: 799px) {
   .highlight-item .pic,
